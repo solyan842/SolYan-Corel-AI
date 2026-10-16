@@ -1,4 +1,6 @@
 using System.IO.Pipes;
+using System.Security.AccessControl;
+using System.Security.Principal;
 using System.Text;
 
 namespace SolYan.CorelAI.Host;
@@ -11,20 +13,53 @@ public sealed class PipeAgentServer
 
     public PipeAgentServer(CorelAiRuntime runtime) => _runtime = runtime;
 
-    public async Task RunAsync(CancellationToken cancellationToken = default)
+    public async Task RunAsync(
+        CancellationToken cancellationToken = default,
+        Action? onListening = null)
     {
+        var listeningAnnounced = false;
+
         while (!cancellationToken.IsCancellationRequested)
         {
-            await using var server = new NamedPipeServerStream(
-                PipeName,
-                PipeDirection.InOut,
-                1,
-                PipeTransmissionMode.Byte,
-                PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly);
+            await using var server = CreateCurrentUserPipe();
+
+            if (!listeningAnnounced)
+            {
+                listeningAnnounced = true;
+                onListening?.Invoke();
+            }
 
             await server.WaitForConnectionAsync(cancellationToken).ConfigureAwait(false);
             await ServeClientAsync(server, cancellationToken).ConfigureAwait(false);
         }
+    }
+
+    private static NamedPipeServerStream CreateCurrentUserPipe()
+    {
+        if (!OperatingSystem.IsWindows())
+            throw new PlatformNotSupportedException("SolYan Corel AI named-pipe IPC requires Windows.");
+
+        using var identity = WindowsIdentity.GetCurrent();
+        var sid = identity.User
+            ?? throw new InvalidOperationException("Could not resolve the current Windows user SID for local IPC security.");
+
+        var security = new PipeSecurity();
+        security.SetOwner(sid);
+        security.SetAccessRuleProtection(isProtected: true, preserveInheritance: false);
+        security.AddAccessRule(new PipeAccessRule(
+            sid,
+            PipeAccessRights.FullControl,
+            AccessControlType.Allow));
+
+        return NamedPipeServerStreamAcl.Create(
+            PipeName,
+            PipeDirection.InOut,
+            1,
+            PipeTransmissionMode.Byte,
+            PipeOptions.Asynchronous,
+            4096,
+            4096,
+            security);
     }
 
     private async Task ServeClientAsync(Stream stream, CancellationToken cancellationToken)
