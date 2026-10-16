@@ -70,6 +70,9 @@ public sealed class CorelAiRuntime
         CancellationToken cancellationToken = default) =>
         _corel.RunPreflightAsync(minBitmapDpi, flagRgb, checkFonts, cancellationToken);
 
+    public Task<JsonObject> RunMutationUndoSmokeTestAsync(CancellationToken cancellationToken = default) =>
+        _corel.RunMutationUndoSmokeTestAsync(cancellationToken);
+
     public async Task<JsonObject> GetContextAsync(CancellationToken cancellationToken = default)
     {
         var document = await _corel.GetDocumentStateAsync(cancellationToken).ConfigureAwait(false);
