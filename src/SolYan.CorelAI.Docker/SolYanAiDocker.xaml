@@ -86,8 +86,10 @@
     </Grid>
 
     <DockPanel Grid.Row="5" Margin="12,0,12,12" LastChildFill="False">
-      <Button x:Name="RefreshButton" Content="Refresh" MinWidth="74" Margin="0,0,8,0" Click="RefreshButton_Click" />
-      <Button x:Name="UndoButton" Content="Undo AI" MinWidth="78" Margin="0,0,8,0" Click="UndoButton_Click" />
+      <Button x:Name="RefreshButton" Content="Refresh" MinWidth="70" Margin="0,0,6,0" Click="RefreshButton_Click" />
+      <Button x:Name="PreflightButton" Content="Preflight" MinWidth="74" Margin="0,0,6,0" Click="PreflightButton_Click"
+              ToolTip="Check fonts, text overflow, bitmap resolution, RGB usage, locked objects and hidden/non-editable layers." />
+      <Button x:Name="UndoButton" Content="Undo AI" MinWidth="74" Margin="0,0,8,0" Click="UndoButton_Click" />
       <TextBlock Text="Ctrl+Enter to run" Foreground="#7F8998" FontSize="10" VerticalAlignment="Center" />
     </DockPanel>
   </Grid>
