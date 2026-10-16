@@ -140,10 +140,10 @@ public sealed class CorelSession : IDisposable
                     ["index"] = i,
                     ["name"] = TryString(() => shape.Name),
                     ["type"] = TryString(() => shape.Type),
-                    ["x_mm"] = TryMm(app, doc, () => shape.PositionX),
-                    ["y_mm"] = TryMm(app, doc, () => shape.PositionY),
-                    ["width_mm"] = TryMm(app, doc, () => shape.SizeWidth),
-                    ["height_mm"] = TryMm(app, doc, () => shape.SizeHeight),
+                    ["x_mm"] = TryMm((object)app, (object)doc, () => shape.PositionX),
+                    ["y_mm"] = TryMm((object)app, (object)doc, () => shape.PositionY),
+                    ["width_mm"] = TryMm((object)app, (object)doc, () => shape.SizeWidth),
+                    ["height_mm"] = TryMm((object)app, (object)doc, () => shape.SizeHeight),
                     ["rotation_degrees"] = TryDouble(() => shape.RotationAngle)
                 };
 
@@ -204,8 +204,8 @@ public sealed class CorelSession : IDisposable
 
             double x = 0, y = 0, w = 0, h = 0;
             range.GetBoundingBox(ref x, ref y, ref w, ref h);
-            var targetX = Convert.ToDouble(doc.ActivePage.SizeWidth) / 2.0;
-            var targetY = Convert.ToDouble(doc.ActivePage.SizeHeight) / 2.0;
+            var targetX = -Convert.ToDouble(doc.DrawingOriginX);
+            var targetY = -Convert.ToDouble(doc.DrawingOriginY);
             range.Move(targetX - (x + w / 2.0), targetY - (y + h / 2.0));
         }, cancellationToken);
 
@@ -377,10 +377,18 @@ public sealed class CorelSession : IDisposable
         catch { return null; }
     }
 
-    private static double? TryMm(dynamic app, dynamic doc, Func<object?> getter)
+    private static double? TryMm(object appObject, object docObject, Func<object?> getter)
     {
-        try { return ToMm(app, doc, Convert.ToDouble(getter())); }
-        catch { return null; }
+        try
+        {
+            dynamic app = appObject;
+            dynamic doc = docObject;
+            return ToMm(app, doc, Convert.ToDouble(getter()));
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     public void Dispose() => _dispatcher.Dispose();
