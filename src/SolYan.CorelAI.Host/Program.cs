@@ -1,9 +1,11 @@
-using SolYan.CorelAI.Agent;
 using SolYan.CorelAI.Core;
 using SolYan.CorelAI.Corel;
 using SolYan.CorelAI.Host;
 
-var apiKey = Environment.GetEnvironmentVariable("OPENAI_API_KEY");
+var environmentApiKey = Environment.GetEnvironmentVariable("OPENAI_API_KEY");
+var apiKey = !string.IsNullOrWhiteSpace(environmentApiKey)
+    ? environmentApiKey
+    : WindowsSecretStore.TryLoadApiKey();
 var model = Environment.GetEnvironmentVariable("OPENAI_MODEL") ?? "gpt-6-astra";
 using var http = new HttpClient { Timeout = TimeSpan.FromMinutes(5) };
 using var corel = new CorelSession();
@@ -28,14 +30,8 @@ catch (Exception ex)
     Console.Error.WriteLine($"Capability probe warning: {ex.Message}");
 }
 
-OpenAiResponsesAgent? agent = null;
-if (!string.IsNullOrWhiteSpace(apiKey))
-{
-    var registry = new ToolRegistry(CorelToolCatalog.Create(corel));
-    agent = new OpenAiResponsesAgent(http, registry, apiKey, model);
-}
-
-var runtime = new CorelAiRuntime(corel, agent);
+var registry = new ToolRegistry(CorelToolCatalog.Create(corel));
+var runtime = new CorelAiRuntime(corel, http, registry, model, apiKey);
 
 if (args.Any(arg => arg.Equals("--pipe", StringComparison.OrdinalIgnoreCase)))
 {
@@ -48,8 +44,8 @@ if (args.Any(arg => arg.Equals("--pipe", StringComparison.OrdinalIgnoreCase)))
 
     Console.WriteLine($"SolYan Corel AI pipe server — {PipeAgentServer.PipeName}");
     Console.WriteLine(runtime.AiConfigured
-        ? $"AI configured with model {model}."
-        : "OPENAI_API_KEY is not set; inspection/undo are available but AI tasks are disabled.");
+        ? $"AI configured with model {runtime.Model}."
+        : "No OpenAI API key is configured yet; the Corel Docker can configure one for this Windows user.");
 
     try
     {
@@ -63,10 +59,10 @@ if (args.Any(arg => arg.Equals("--pipe", StringComparison.OrdinalIgnoreCase)))
     return 0;
 }
 
-Console.WriteLine($"SolYan Corel AI — {model}");
+Console.WriteLine($"SolYan Corel AI — {runtime.Model}");
 Console.WriteLine(runtime.AiConfigured
-    ? "CorelDRAW connected. AI geometry uses millimetres. Type a task, /undo, /capabilities, /context, or /quit."
-    : "CorelDRAW connected, but OPENAI_API_KEY is not set. /undo, /capabilities and /context still work.");
+    ? "CorelDRAW connected. AI geometry uses millimetres and visual feedback is enabled. Type a task, /undo, /capabilities, /context, or /quit."
+    : "CorelDRAW connected, but no OpenAI API key is configured. The installed Docker can save one securely for this Windows user.");
 
 while (true)
 {
@@ -92,6 +88,13 @@ while (true)
         if (prompt.Equals("/context", StringComparison.OrdinalIgnoreCase))
         {
             Console.WriteLine((await runtime.GetContextAsync()).ToJsonString());
+            continue;
+        }
+
+        if (prompt.Equals("/clear-key", StringComparison.OrdinalIgnoreCase))
+        {
+            runtime.ClearApiKey();
+            Console.WriteLine("Stored OpenAI API key cleared for this Windows user.");
             continue;
         }
 
