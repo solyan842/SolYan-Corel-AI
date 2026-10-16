@@ -98,12 +98,20 @@ SolYan Corel AI is a high-capability AI operator for CorelDRAW on Windows. It us
 - reports local runtime OS/framework/process architecture and AI configuration without exposing the API key
 - document-dependent checks are explicitly skipped when no document is open rather than reported as false failures
 
+### Explicit mutation/undo smoke test
+- not exposed to the AI tool catalog and therefore cannot be model-invoked
+- only runs through the explicit local test path
+- Docker requires a Yes/No warning before execution
+- warns that a new Corel action may clear existing Redo history
+- creates a temporary 5 × 5 mm rectangle inside one Corel command group, performs one Undo, and verifies the temporary object and page shape count are restored
+- attempts direct cleanup if the test fails mid-operation
+
 ## Verification state
 
-- GitHub Actions run #105 on `dev/v0.1-corel-agent` completed successfully for commit `d7bd7fa0996e8934c37a9558574d0a32e10abc05`.
-- Run #105 passed restore, build, self-contained engine publish, Corel add-on assembly, and artifact upload.
-- Artifact `SolYanCorelAI-win-x64` was produced successfully: artifact ID `12025569895`, size `30628597` bytes, SHA-256 digest `c10fc410c5ac908aa4fa3070f578388f6bd7d025cda226a5c769ddae71f19414`.
-- Preflight and the non-destructive runtime diagnostics stack are build-verified through the Docker UI, IPC and CLI by run #105.
+- GitHub Actions run #112 on `dev/v0.1-corel-agent` completed successfully for commit `bb4c6a421ab5dd4875e1e91ae166fac3d948b182`.
+- Run #112 passed restore, build, self-contained engine publish, Corel add-on assembly, and artifact upload.
+- Artifact `SolYanCorelAI-win-x64` was produced successfully: artifact ID `12026186741`, size `30632852` bytes, SHA-256 digest `c171fcd5468ee2d1a5acd41d37d35bdb05ae08e3036ec5aeae93b73d29362108`.
+- Preflight, diagnostics, and the opt-in mutation/undo smoke-test stack are build-verified by run #112.
 - Real CorelDRAW COM behavior is **not yet field-passed** because GitHub-hosted runners do not contain a supported CorelDRAW runtime.
 
 ## Known repository condition
@@ -112,8 +120,8 @@ SolYan Corel AI is a high-capability AI operator for CorelDRAW on Windows. It us
 
 ## Next implementation priorities
 
-1. Add an opt-in mutation/undo smoke test that creates a temporary test object inside one command group and restores the document immediately; never run this automatically and warn that a new Corel action may clear existing Redo history.
-2. Add reusable high-level workflow tools for common production tasks instead of exposing uncontrolled raw COM methods.
+1. Add reusable high-level deterministic layout workflows, beginning with fit-to-page/margins and grid arrangement.
+2. Add high-level batch output workflows with explicit destination paths and predictable file naming.
 3. Field-test the installable artifact against the user's actual CorelDRAW version before claiming runtime PASS.
 
 ## Runtime PASS definition
