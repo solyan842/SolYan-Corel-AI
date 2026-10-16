@@ -78,6 +78,28 @@ namespace SolYan.CorelAI.Docker
             finally { SetBusy(false, null); }
         }
 
+        private async void DiagnosticsButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (_busy) return;
+            SetBusy(true, "Running diagnostics…");
+            try
+            {
+                await EnsureEngineAsync();
+                var result = await _engine.RunDiagnosticsAsync();
+                var passed = ExtractJsonInt(result, "passed") ?? 0;
+                var failed = ExtractJsonInt(result, "failed") ?? 0;
+
+                AppendActivity(
+                    "Diagnostics",
+                    BuildDiagnosticsSummary(passed, failed) + Environment.NewLine + Compact(result, 7000));
+                SetStatus(failed == 0, failed == 0
+                    ? "Diagnostics passed"
+                    : "Diagnostics degraded");
+            }
+            catch (Exception ex) { ShowError(ex); }
+            finally { SetBusy(false, null); }
+        }
+
         private async void SaveKeyButton_Click(object sender, RoutedEventArgs e)
         {
             if (_busy) return;
@@ -314,6 +336,13 @@ namespace SolYan.CorelAI.Docker
             return "Not ready for output. Blocking issues: " + blocking + ". Warnings: " + warnings + ".";
         }
 
+        private static string BuildDiagnosticsSummary(int passed, int failed)
+        {
+            return failed == 0
+                ? "Runtime diagnostics passed: " + passed + " checks passed."
+                : "Runtime diagnostics degraded: " + passed + " passed, " + failed + " failed.";
+        }
+
         private void SetBusy(bool busy, string message)
         {
             _busy = busy;
@@ -321,6 +350,7 @@ namespace SolYan.CorelAI.Docker
             UndoButton.IsEnabled = !busy;
             RefreshButton.IsEnabled = !busy;
             PreflightButton.IsEnabled = !busy;
+            DiagnosticsButton.IsEnabled = !busy;
             SaveKeyButton.IsEnabled = !busy;
             ClearKeyButton.IsEnabled = !busy;
             ApplyModelButton.IsEnabled = !busy;
