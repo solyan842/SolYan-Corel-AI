@@ -73,6 +73,31 @@ function Get-CorelAddonCandidates {
     return $results
 }
 
+function Test-IsAdministrator {
+    $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
+    $principal = New-Object Security.Principal.WindowsPrincipal($identity)
+    return $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+}
+
+function Restart-Elevated {
+    param([Parameter(Mandatory = $true)][string]$ResolvedCorelRoot)
+
+    $scriptPath = [System.IO.Path]::GetFullPath($MyInvocation.ScriptName)
+    if (-not (Test-Path -LiteralPath $scriptPath)) {
+        $scriptPath = [System.IO.Path]::GetFullPath($PSCommandPath)
+    }
+
+    $escapedScript = '"' + $scriptPath.Replace('"', '\"') + '"'
+    $escapedRoot = '"' + $ResolvedCorelRoot.Replace('"', '\"') + '"'
+    $arguments = "-NoProfile -ExecutionPolicy Bypass -File $escapedScript -CorelRoot $escapedRoot"
+
+    Write-Host 'Administrator permission is required to install into CorelDRAW under Program Files.' -ForegroundColor Yellow
+    Write-Host 'Windows will show a User Account Control prompt. Choose Yes to continue.' -ForegroundColor Yellow
+
+    $process = Start-Process -FilePath 'powershell.exe' -Verb RunAs -ArgumentList $arguments -Wait -PassThru
+    exit $process.ExitCode
+}
+
 if (-not $CorelRoot) {
     $candidates = @(Get-CorelAddonCandidates)
 
@@ -89,6 +114,10 @@ $CorelRoot = [System.IO.Path]::GetFullPath($CorelRoot)
 $parentName = Split-Path -Leaf (Split-Path -Parent $CorelRoot)
 if ((Split-Path -Leaf $CorelRoot) -ne 'Addons' -or $parentName -notin @('Programs64', 'Programs')) {
     throw "CorelRoot must point to CorelDRAW's Programs64\Addons (or Programs\Addons) directory. Received: $CorelRoot"
+}
+
+if (-not (Test-IsAdministrator)) {
+    Restart-Elevated -ResolvedCorelRoot $CorelRoot
 }
 
 if (-not (Test-Path -LiteralPath $CorelRoot)) {
