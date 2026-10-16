@@ -81,7 +81,8 @@ SolYan Corel AI is a high-capability AI operator for CorelDRAW on Windows. It us
 - installable Corel add-on packaging from CI
 
 ### Preflight / production inspection
-- whole-document preflight tool
+- whole-document preflight tool available to both the AI and Docker UI
+- one-click `Preflight` button in the Corel Docker
 - missing-font detection against Corel's installed `FontList`
 - paragraph-text overflow detection
 - bitmap DPI checks with configurable threshold
@@ -89,13 +90,14 @@ SolYan Corel AI is a high-capability AI operator for CorelDRAW on Windows. It us
 - fill/outline color-type summary
 - locked shape reporting
 - hidden and non-editable layer reporting
+- detailed issue payload capped at 500 entries while retaining whole-document summary counts
 
 ## Verification state
 
-- GitHub Actions run #85 on `dev/v0.1-corel-agent` completed successfully for commit `3fbd4770dbd6ab1cadec2e2b922159cd516f1466`.
-- That run passed restore, build, self-contained engine publish, Corel add-on assembly, and artifact upload.
-- Artifact `SolYanCorelAI-win-x64` was produced successfully.
-- Subsequent preflight/agent changes require a newer CI checkpoint before being considered build-verified.
+- GitHub Actions run #98 on `dev/v0.1-corel-agent` completed successfully for commit `6324dd006ad0207a2f1abfbfbcf73f4033d37655`.
+- Run #98 passed restore, build, self-contained engine publish, Corel add-on assembly, and artifact upload.
+- Artifact `SolYanCorelAI-win-x64` was produced successfully: artifact ID `12025284902`, size `30622046` bytes, SHA-256 digest `c736962d4d5a62eee9f96c983a5b8cf393ca9f0e060228e6508aeb6a508714ef`.
+- The preflight engine, bounded payload, AI tool registration, IPC command, Docker client and one-click Docker UI are build-verified by run #98.
 - Real CorelDRAW COM behavior is **not yet field-passed** because GitHub-hosted runners do not contain a supported CorelDRAW runtime.
 
 ## Known repository condition
@@ -104,12 +106,11 @@ SolYan Corel AI is a high-capability AI operator for CorelDRAW on Windows. It us
 
 ## Next implementation priorities
 
-1. Keep the current dev branch CI green after the new preflight capability.
-2. Harden preflight for very large documents by bounding detailed issue payloads while retaining full summary counts.
-3. Add production diagnostics surfaced in the Docker UI rather than raw JSON only.
+1. Add a non-destructive Windows/Corel runtime diagnostics command that reports exact Corel version, capability probes, document context, preview export, preflight and local IPC/AI configuration health.
+2. Surface the diagnostics report in the Docker UI for field testing on the user's CorelDRAW installation.
+3. Add an opt-in mutation/undo smoke test that creates a temporary test object inside one command group and restores the document immediately; never run this automatically.
 4. Add reusable high-level workflow tools for common production tasks instead of exposing uncontrolled raw COM methods.
-5. Add a Windows/Corel runtime smoke-test command that reports exact Corel version, capability probes, document mutation/undo results, preview export, and add-on/IPC health on the user's machine.
-6. Field-test the installable artifact against the user's actual CorelDRAW version before claiming runtime PASS.
+5. Field-test the installable artifact against the user's actual CorelDRAW version before claiming runtime PASS.
 
 ## Runtime PASS definition
 
