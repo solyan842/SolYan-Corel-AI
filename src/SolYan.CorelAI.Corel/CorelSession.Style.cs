@@ -7,7 +7,7 @@ public sealed partial class CorelSession
         {
             dynamic app = App();
             dynamic color = app.CreateCMYKColor(ClampPercent(c), ClampPercent(m), ClampPercent(y), ClampPercent(k));
-            dynamic range = app.ActiveDocument.ActiveSelectionRange;
+            dynamic range = app.ActiveSelectionRange;
             EnsureSelection(range);
             for (var i = 1; i <= Convert.ToInt32(range.Count); i++)
                 range[i].Fill.ApplyUniformFill(color);
@@ -21,7 +21,7 @@ public sealed partial class CorelSession
             dynamic app = App();
             dynamic doc = app.ActiveDocument;
             dynamic color = app.CreateCMYKColor(ClampPercent(c), ClampPercent(m), ClampPercent(y), ClampPercent(k));
-            dynamic range = doc.ActiveSelectionRange;
+            dynamic range = app.ActiveSelectionRange;
             EnsureSelection(range);
             var width = ToDocumentUnits(app, doc, widthMm);
 
@@ -44,7 +44,7 @@ public sealed partial class CorelSession
             if (!double.IsFinite(sizePt) || sizePt <= 0 || sizePt > 10000)
                 throw new ArgumentOutOfRangeException(nameof(sizePt), "Font size must be a positive point value.");
 
-            dynamic range = App().ActiveDocument.ActiveSelectionRange;
+            dynamic range = App().ActiveSelectionRange;
             EnsureSelection(range);
             var changed = 0;
 
