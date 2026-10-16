@@ -25,6 +25,14 @@ namespace SolYan.CorelAI.Docker
             return SendAsync("SET_API_KEY " + Encode(apiKey.Trim()));
         }
 
+        public Task<string> SetModelAsync(string model)
+        {
+            if (string.IsNullOrWhiteSpace(model))
+                throw new ArgumentException("Model cannot be empty.", nameof(model));
+
+            return SendAsync("SET_MODEL " + Encode(model.Trim()));
+        }
+
         public Task<string> RunTaskAsync(string prompt)
         {
             if (string.IsNullOrWhiteSpace(prompt))
