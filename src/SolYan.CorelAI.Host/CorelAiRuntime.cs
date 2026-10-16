@@ -63,6 +63,13 @@ public sealed class CorelAiRuntime
     public Task<JsonObject> GetCapabilitiesAsync(CancellationToken cancellationToken = default) =>
         _corel.GetCapabilitiesAsync(cancellationToken);
 
+    public Task<JsonObject> RunPreflightAsync(
+        int minBitmapDpi = 150,
+        bool flagRgb = true,
+        bool checkFonts = true,
+        CancellationToken cancellationToken = default) =>
+        _corel.RunPreflightAsync(minBitmapDpi, flagRgb, checkFonts, cancellationToken);
+
     public async Task<JsonObject> GetContextAsync(CancellationToken cancellationToken = default)
     {
         var document = await _corel.GetDocumentStateAsync(cancellationToken).ConfigureAwait(false);
