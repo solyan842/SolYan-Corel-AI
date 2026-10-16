@@ -29,6 +29,7 @@ namespace SolYan.CorelAI.Docker
         private async void SolYanAiDocker_Loaded(object sender, RoutedEventArgs e)
         {
             await EnsureEngineAndRefreshAsync();
+            GC.KeepAlive(_corelApplication);
         }
 
         private async void SendButton_Click(object sender, RoutedEventArgs e)
