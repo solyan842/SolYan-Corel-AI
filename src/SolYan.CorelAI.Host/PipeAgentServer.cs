@@ -8,8 +8,10 @@ namespace SolYan.CorelAI.Host;
 public sealed class PipeAgentServer
 {
     public const string PipeName = "SolYan.CorelAI.v1";
+    private const int MaxPipeInstances = 4;
 
     private readonly CorelAiRuntime _runtime;
+    private readonly SemaphoreSlim _commandGate = new(1, 1);
 
     public PipeAgentServer(CorelAiRuntime runtime) => _runtime = runtime;
 
@@ -18,19 +20,49 @@ public sealed class PipeAgentServer
         Action? onListening = null)
     {
         var listeningAnnounced = false;
+        var activeClients = new HashSet<Task>();
 
-        while (!cancellationToken.IsCancellationRequested)
+        try
         {
-            await using var server = CreateCurrentUserPipe();
-
-            if (!listeningAnnounced)
+            while (!cancellationToken.IsCancellationRequested)
             {
-                listeningAnnounced = true;
-                onListening?.Invoke();
-            }
+                var server = CreateCurrentUserPipe();
+                try
+                {
+                    if (!listeningAnnounced)
+                    {
+                        listeningAnnounced = true;
+                        onListening?.Invoke();
+                    }
 
-            await server.WaitForConnectionAsync(cancellationToken).ConfigureAwait(false);
-            await ServeClientAsync(server, cancellationToken).ConfigureAwait(false);
+                    await server.WaitForConnectionAsync(cancellationToken).ConfigureAwait(false);
+                }
+                catch
+                {
+                    await server.DisposeAsync().ConfigureAwait(false);
+                    throw;
+                }
+
+                // Hand the accepted client to a background handler and immediately
+                // create the next listening instance. Docker commands use short-lived
+                // connections, so this removes the PING -> CONTEXT listener gap.
+                activeClients.Add(ServeAndDisposeClientAsync(server, cancellationToken));
+                activeClients.RemoveWhere(task => task.IsCompleted);
+            }
+        }
+        finally
+        {
+            if (activeClients.Count > 0)
+            {
+                try
+                {
+                    await Task.WhenAll(activeClients).ConfigureAwait(false);
+                }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                {
+                    // Normal shutdown.
+                }
+            }
         }
     }
 
@@ -54,12 +86,30 @@ public sealed class PipeAgentServer
         return NamedPipeServerStreamAcl.Create(
             PipeName,
             PipeDirection.InOut,
-            1,
+            MaxPipeInstances,
             PipeTransmissionMode.Byte,
             PipeOptions.Asynchronous,
             4096,
             4096,
             security);
+    }
+
+    private async Task ServeAndDisposeClientAsync(
+        NamedPipeServerStream server,
+        CancellationToken cancellationToken)
+    {
+        await using (server.ConfigureAwait(false))
+        {
+            try
+            {
+                await ServeClientAsync(server, cancellationToken).ConfigureAwait(false);
+            }
+            catch (IOException)
+            {
+                // A client may disconnect between sending a command and receiving its
+                // response. The next pipe instance remains available for reconnection.
+            }
+        }
     }
 
     private async Task ServeClientAsync(Stream stream, CancellationToken cancellationToken)
@@ -75,7 +125,22 @@ public sealed class PipeAgentServer
             string response;
             try
             {
-                response = await ExecuteAsync(line, cancellationToken).ConfigureAwait(false);
+                if (line.Equals("PING", StringComparison.Ordinal))
+                {
+                    response = Ok("SolYan Corel AI engine");
+                }
+                else
+                {
+                    await _commandGate.WaitAsync(cancellationToken).ConfigureAwait(false);
+                    try
+                    {
+                        response = await ExecuteAsync(line, cancellationToken).ConfigureAwait(false);
+                    }
+                    finally
+                    {
+                        _commandGate.Release();
+                    }
+                }
             }
             catch (Exception ex)
             {
