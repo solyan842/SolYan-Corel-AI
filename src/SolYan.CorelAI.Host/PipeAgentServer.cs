@@ -82,6 +82,14 @@ public sealed class PipeAgentServer
             return Ok("OpenAI API key encrypted and saved for this Windows user.");
         }
 
+        const string modelPrefix = "SET_MODEL ";
+        if (command.StartsWith(modelPrefix, StringComparison.Ordinal))
+        {
+            var model = Decode(command[modelPrefix.Length..]);
+            _runtime.ConfigureModel(model, persist: true);
+            return Ok($"AI model set to {_runtime.Model}.");
+        }
+
         const string taskPrefix = "TASK ";
         if (command.StartsWith(taskPrefix, StringComparison.Ordinal))
         {
