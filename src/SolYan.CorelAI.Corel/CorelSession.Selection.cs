@@ -120,7 +120,7 @@ public sealed partial class CorelSession
             switch (scope.Trim().ToLowerInvariant())
             {
                 case "selection":
-                    shapes = doc.ActiveSelectionRange;
+                    shapes = app.ActiveSelectionRange;
                     EnsureSelection(shapes);
                     break;
                 case "page":
