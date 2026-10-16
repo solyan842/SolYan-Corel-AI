@@ -18,7 +18,7 @@ public sealed partial class CorelSession
             if (app.Documents.Count == 0) throw new InvalidOperationException("No CorelDRAW document is open.");
             dynamic doc = app.ActiveDocument;
             dynamic page = doc.ActivePage;
-            dynamic range = doc.ActiveSelectionRange;
+            dynamic range = app.ActiveSelectionRange;
             EnsureSelection(range);
 
             var pageWidth = Convert.ToDouble(page.SizeWidth);
@@ -99,7 +99,7 @@ public sealed partial class CorelSession
             dynamic app = App();
             if (app.Documents.Count == 0) throw new InvalidOperationException("No CorelDRAW document is open.");
             dynamic doc = app.ActiveDocument;
-            dynamic range = doc.ActiveSelectionRange;
+            dynamic range = app.ActiveSelectionRange;
             EnsureSelection(range);
 
             var count = Convert.ToInt32(range.Count);
