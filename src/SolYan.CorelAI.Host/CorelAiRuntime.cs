@@ -87,6 +87,112 @@ public sealed class CorelAiRuntime
         };
     }
 
+    public async Task<JsonObject> RunDiagnosticsAsync(CancellationToken cancellationToken = default)
+    {
+        var checks = new JsonArray();
+        var passed = 0;
+        var failed = 0;
+
+        async Task AddCheckAsync(string name, Func<Task<JsonNode?>> probe)
+        {
+            try
+            {
+                var data = await probe().ConfigureAwait(false);
+                checks.Add(new JsonObject
+                {
+                    ["name"] = name,
+                    ["status"] = "pass",
+                    ["data"] = data
+                });
+                passed++;
+            }
+            catch (Exception ex)
+            {
+                checks.Add(new JsonObject
+                {
+                    ["name"] = name,
+                    ["status"] = "fail",
+                    ["error"] = ex.Message
+                });
+                failed++;
+            }
+        }
+
+        await AddCheckAsync(
+            "corel_capabilities",
+            async () => await _corel.GetCapabilitiesAsync(cancellationToken).ConfigureAwait(false)).ConfigureAwait(false);
+
+        JsonObject? documentState = null;
+        await AddCheckAsync(
+            "document_context",
+            async () =>
+            {
+                documentState = await _corel.GetDocumentStateAsync(cancellationToken).ConfigureAwait(false);
+                return documentState;
+            }).ConfigureAwait(false);
+
+        var hasDocument = documentState?["open"]?.GetValue<bool>() == true;
+        if (hasDocument)
+        {
+            await AddCheckAsync(
+                "selection_context",
+                async () => await _corel.GetSelectionAsync(cancellationToken).ConfigureAwait(false)).ConfigureAwait(false);
+
+            await AddCheckAsync(
+                "preview_export",
+                async () =>
+                {
+                    var preview = await _corel.RenderPagePreviewPngAsync(96, cancellationToken).ConfigureAwait(false);
+                    return new JsonObject
+                    {
+                        ["bytes"] = preview.Length,
+                        ["non_empty"] = preview.Length > 0
+                    };
+                }).ConfigureAwait(false);
+
+            await AddCheckAsync(
+                "preflight",
+                async () =>
+                {
+                    var preflight = await _corel.RunPreflightAsync(150, flagRgb: true, checkFonts: true, cancellationToken).ConfigureAwait(false);
+                    return new JsonObject
+                    {
+                        ["ready_for_output"] = preflight["ready_for_output"]?.DeepClone(),
+                        ["blocking_issue_count"] = preflight["blocking_issue_count"]?.DeepClone(),
+                        ["warning_count"] = preflight["warning_count"]?.DeepClone(),
+                        ["issues_total"] = preflight["issues_total"]?.DeepClone()
+                    };
+                }).ConfigureAwait(false);
+        }
+        else
+        {
+            checks.Add(new JsonObject
+            {
+                ["name"] = "document_dependent_checks",
+                ["status"] = "skipped",
+                ["reason"] = "No CorelDRAW document is open. Open a document and run Diagnostics again to test selection, preview and preflight."
+            });
+        }
+
+        return new JsonObject
+        {
+            ["status"] = failed == 0 ? "pass" : "degraded",
+            ["non_destructive"] = true,
+            ["passed"] = passed,
+            ["failed"] = failed,
+            ["ai_configured"] = AiConfigured,
+            ["model"] = _model,
+            ["runtime"] = new JsonObject
+            {
+                ["os"] = Environment.OSVersion.VersionString,
+                ["framework"] = System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription,
+                ["process_architecture"] = System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture.ToString(),
+                ["is_64_bit_process"] = Environment.Is64BitProcess
+            },
+            ["checks"] = checks
+        };
+    }
+
     public Task UndoAsync(CancellationToken cancellationToken = default) =>
         _corel.UndoAsync(cancellationToken);
 
