@@ -23,7 +23,7 @@
 
     <Border Grid.Row="1" Margin="12,12,12,0" Background="#20242A" CornerRadius="8" Padding="10">
       <StackPanel>
-        <TextBlock Text="Active document" Foreground="#8F99A8" FontSize="10" TextTransform="Uppercase" />
+        <TextBlock Text="ACTIVE DOCUMENT" Foreground="#8F99A8" FontSize="10" />
         <TextBlock x:Name="ContextText" Text="Waiting for CorelDRAW context…" Foreground="#E8EBEF" FontSize="12" TextWrapping="Wrap" Margin="0,4,0,0" />
       </StackPanel>
     </Border>
@@ -42,6 +42,7 @@
       <TextBox x:Name="PromptBox" Grid.Column="0" MinHeight="72" MaxHeight="150"
                AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto"
                Background="#252A31" Foreground="White" BorderBrush="#3A414B" Padding="10"
+               PreviewKeyDown="PromptBox_PreviewKeyDown"
                ToolTip="Describe what you want SolYan AI to do in the active CorelDRAW document." />
       <Button x:Name="SendButton" Grid.Column="1" Content="Run" Width="72" Margin="8,0,0,0"
               Click="SendButton_Click" IsDefault="False" />
