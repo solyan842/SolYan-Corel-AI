@@ -2,6 +2,30 @@ using SolYan.CorelAI.Core;
 using SolYan.CorelAI.Corel;
 using SolYan.CorelAI.Host;
 
+var startupLogPath = Path.Combine(
+    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+    "SolYan",
+    "CorelAI",
+    "engine-startup.log");
+
+void StartupLog(string message)
+{
+    try
+    {
+        var directory = Path.GetDirectoryName(startupLogPath);
+        if (!string.IsNullOrWhiteSpace(directory)) Directory.CreateDirectory(directory);
+        File.AppendAllText(
+            startupLogPath,
+            $"{DateTimeOffset.Now:O} pid={Environment.ProcessId} {message}{Environment.NewLine}");
+    }
+    catch
+    {
+        // Startup diagnostics must never prevent the engine from launching.
+    }
+}
+
+StartupLog($"Engine starting. args=[{string.Join(",", args.Select(a => a.Replace(Environment.NewLine, " ")))}] framework={Environment.Version} os={Environment.OSVersion} arch={System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture}");
+
 var environmentApiKey = Environment.GetEnvironmentVariable("OPENAI_API_KEY");
 var apiKey = !string.IsNullOrWhiteSpace(environmentApiKey)
     ? environmentApiKey
@@ -15,21 +39,27 @@ using var corel = new CorelSession();
 
 try
 {
+    StartupLog("Connecting to CorelDRAW COM application.");
     await corel.ConnectAsync();
+    StartupLog("CorelDRAW COM connection succeeded.");
 }
 catch (Exception ex)
 {
+    StartupLog("CorelDRAW COM connection failed: " + ex);
     Console.Error.WriteLine($"Could not connect to CorelDRAW: {ex.Message}");
+    Console.Error.WriteLine($"Startup log: {startupLogPath}");
     return 3;
 }
 
 try
 {
     var capabilities = await corel.GetCapabilitiesAsync();
+    StartupLog("Capability probe succeeded: " + capabilities.ToJsonString());
     Console.WriteLine($"CorelDRAW runtime: {capabilities.ToJsonString()}");
 }
 catch (Exception ex)
 {
+    StartupLog("Capability probe warning: " + ex);
     Console.Error.WriteLine($"Capability probe warning: {ex.Message}");
 }
 
@@ -50,6 +80,7 @@ if (args.Any(arg => arg.Equals("--pipe", StringComparison.OrdinalIgnoreCase)))
         cts.Cancel();
     };
 
+    StartupLog($"Starting current-user named pipe server {PipeAgentServer.PipeName}.");
     Console.WriteLine($"SolYan Corel AI pipe server — {PipeAgentServer.PipeName}");
     Console.WriteLine(runtime.AiConfigured
         ? $"AI configured with model {runtime.Model}."
@@ -61,7 +92,13 @@ if (args.Any(arg => arg.Equals("--pipe", StringComparison.OrdinalIgnoreCase)))
     }
     catch (OperationCanceledException) when (cts.IsCancellationRequested)
     {
-        // Normal Ctrl+C shutdown.
+        StartupLog("Pipe server cancelled normally.");
+    }
+    catch (Exception ex)
+    {
+        StartupLog("Pipe server failed: " + ex);
+        Console.Error.WriteLine($"Pipe server failed: {ex}");
+        return 4;
     }
 
     return 0;
