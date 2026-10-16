@@ -15,6 +15,7 @@ namespace SolYan.CorelAI.Docker
         public Task<string> GetContextAsync() => SendAsync("CONTEXT");
         public Task<string> GetCapabilitiesAsync() => SendAsync("CAPABILITIES");
         public Task<string> RunPreflightAsync() => SendAsync("PREFLIGHT");
+        public Task<string> RunDiagnosticsAsync() => SendAsync("DIAGNOSTICS");
         public Task<string> UndoAsync() => SendAsync("UNDO");
         public Task<string> ClearApiKeyAsync() => SendAsync("CLEAR_API_KEY");
 
