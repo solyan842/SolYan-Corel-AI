@@ -7,7 +7,7 @@ public sealed partial class CorelSession
         {
             dynamic app = App();
             dynamic doc = app.ActiveDocument;
-            dynamic range = doc.ActiveSelectionRange;
+            dynamic range = app.ActiveSelectionRange;
             EnsureSelection(range);
 
             double x = 0, y = 0, w = 0, h = 0;
@@ -20,7 +20,7 @@ public sealed partial class CorelSession
     public Task RotateSelectionAsync(double angleDegrees, CancellationToken cancellationToken = default) =>
         MutateAsync(() =>
         {
-            dynamic range = App().ActiveDocument.ActiveSelectionRange;
+            dynamic range = App().ActiveSelectionRange;
             EnsureSelection(range);
             range.Rotate(angleDegrees);
         }, cancellationToken);
@@ -28,7 +28,7 @@ public sealed partial class CorelSession
     public Task OrderSelectionAsync(string order, CancellationToken cancellationToken = default) =>
         MutateAsync(() =>
         {
-            dynamic range = App().ActiveDocument.ActiveSelectionRange;
+            dynamic range = App().ActiveSelectionRange;
             EnsureSelection(range);
 
             switch (order.Trim().ToLowerInvariant())
@@ -47,8 +47,9 @@ public sealed partial class CorelSession
     public Task AlignSelectionAsync(string mode, string target, CancellationToken cancellationToken = default) =>
         MutateAsync(() =>
         {
-            dynamic doc = App().ActiveDocument;
-            dynamic range = doc.ActiveSelectionRange;
+            dynamic app = App();
+            dynamic doc = app.ActiveDocument;
+            dynamic range = app.ActiveSelectionRange;
             EnsureSelection(range);
 
             double rangeX = 0, rangeY = 0, rangeW = 0, rangeH = 0;
@@ -123,7 +124,7 @@ public sealed partial class CorelSession
     public Task DistributeSelectionAsync(string axis, CancellationToken cancellationToken = default) =>
         MutateAsync(() =>
         {
-            dynamic range = App().ActiveDocument.ActiveSelectionRange;
+            dynamic range = App().ActiveSelectionRange;
             EnsureSelection(range);
             var count = Convert.ToInt32(range.Count);
             if (count < 3) throw new InvalidOperationException("At least three selected objects are required for distribution.");
