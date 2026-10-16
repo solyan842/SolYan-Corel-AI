@@ -208,7 +208,9 @@ Rules:
     {
         if (toolName.StartsWith("corel_get_", StringComparison.Ordinal) ||
             toolName.StartsWith("corel_list_", StringComparison.Ordinal) ||
-            toolName.StartsWith("corel_preflight_", StringComparison.Ordinal))
+            toolName.StartsWith("corel_preflight_", StringComparison.Ordinal) ||
+            toolName.StartsWith("corel_export_", StringComparison.Ordinal) ||
+            toolName.StartsWith("corel_batch_export_", StringComparison.Ordinal))
             return false;
 
         return toolName is not "corel_select_all"
