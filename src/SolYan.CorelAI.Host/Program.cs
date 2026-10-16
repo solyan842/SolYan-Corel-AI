@@ -23,11 +23,21 @@ catch (Exception ex)
     return 3;
 }
 
+try
+{
+    var capabilities = await corel.GetCapabilitiesAsync();
+    Console.WriteLine($"CorelDRAW runtime: {capabilities.ToJsonString()}");
+}
+catch (Exception ex)
+{
+    Console.Error.WriteLine($"Capability probe warning: {ex.Message}");
+}
+
 var registry = new ToolRegistry(CorelToolCatalog.Create(corel));
 var agent = new OpenAiResponsesAgent(http, registry, apiKey, model);
 
 Console.WriteLine($"SolYan Corel AI — {model}");
-Console.WriteLine("CorelDRAW connected. Type a task, /undo, or /quit.");
+Console.WriteLine("CorelDRAW connected. AI geometry uses millimetres. Type a task, /undo, /capabilities, or /quit.");
 
 while (true)
 {
@@ -39,6 +49,12 @@ while (true)
     {
         await corel.UndoAsync();
         Console.WriteLine("Undone in CorelDRAW.");
+        continue;
+    }
+
+    if (prompt.Equals("/capabilities", StringComparison.OrdinalIgnoreCase))
+    {
+        Console.WriteLine((await corel.GetCapabilitiesAsync()).ToJsonString());
         continue;
     }
 
