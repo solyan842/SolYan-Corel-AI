@@ -15,6 +15,15 @@ namespace SolYan.CorelAI.Docker
         public Task<string> GetContextAsync() => SendAsync("CONTEXT");
         public Task<string> GetCapabilitiesAsync() => SendAsync("CAPABILITIES");
         public Task<string> UndoAsync() => SendAsync("UNDO");
+        public Task<string> ClearApiKeyAsync() => SendAsync("CLEAR_API_KEY");
+
+        public Task<string> SetApiKeyAsync(string apiKey)
+        {
+            if (string.IsNullOrWhiteSpace(apiKey) || apiKey.Trim().Length < 20)
+                throw new ArgumentException("OpenAI API key is empty or invalid.", nameof(apiKey));
+
+            return SendAsync("SET_API_KEY " + Encode(apiKey.Trim()));
+        }
 
         public Task<string> RunTaskAsync(string prompt)
         {
