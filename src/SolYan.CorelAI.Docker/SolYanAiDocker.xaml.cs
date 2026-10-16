@@ -88,13 +88,18 @@ namespace SolYan.CorelAI.Docker
                 var result = await _engine.RunDiagnosticsAsync();
                 var passed = ExtractJsonInt(result, "passed") ?? 0;
                 var failed = ExtractJsonInt(result, "failed") ?? 0;
+                var skipped = ExtractJsonInt(result, "skipped") ?? 0;
 
                 AppendActivity(
                     "Diagnostics",
-                    BuildDiagnosticsSummary(passed, failed) + Environment.NewLine + Compact(result, 7000));
-                SetStatus(failed == 0, failed == 0
-                    ? "Diagnostics passed"
-                    : "Diagnostics degraded");
+                    BuildDiagnosticsSummary(passed, failed, skipped) + Environment.NewLine + Compact(result, 7000));
+
+                if (failed > 0)
+                    SetStatus(false, "Diagnostics degraded");
+                else if (skipped > 0)
+                    SetStatus(true, "Diagnostics limited — open a document");
+                else
+                    SetStatus(true, "Diagnostics passed");
             }
             catch (Exception ex) { ShowError(ex); }
             finally { SetBusy(false, null); }
@@ -372,11 +377,13 @@ namespace SolYan.CorelAI.Docker
             return "Not ready for output. Blocking issues: " + blocking + ". Warnings: " + warnings + ".";
         }
 
-        private static string BuildDiagnosticsSummary(int passed, int failed)
+        private static string BuildDiagnosticsSummary(int passed, int failed, int skipped)
         {
-            return failed == 0
-                ? "Runtime diagnostics passed: " + passed + " checks passed."
-                : "Runtime diagnostics degraded: " + passed + " passed, " + failed + " failed.";
+            if (failed > 0)
+                return "Runtime diagnostics degraded: " + passed + " passed, " + failed + " failed, " + skipped + " skipped.";
+            if (skipped > 0)
+                return "Runtime diagnostics limited: " + passed + " passed, " + skipped + " skipped. Open a document to run the remaining checks.";
+            return "Runtime diagnostics passed: " + passed + " checks passed; no checks were skipped.";
         }
 
         private void SetBusy(bool busy, string message)
