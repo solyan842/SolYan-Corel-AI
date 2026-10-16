@@ -68,6 +68,9 @@ public sealed class PipeAgentServer
         if (command.Equals("DIAGNOSTICS", StringComparison.Ordinal))
             return Ok((await _runtime.RunDiagnosticsAsync(cancellationToken).ConfigureAwait(false)).ToJsonString());
 
+        if (command.Equals("MUTATION_SMOKE_TEST", StringComparison.Ordinal))
+            return Ok((await _runtime.RunMutationUndoSmokeTestAsync(cancellationToken).ConfigureAwait(false)).ToJsonString());
+
         if (command.Equals("UNDO", StringComparison.Ordinal))
         {
             await _runtime.UndoAsync(cancellationToken).ConfigureAwait(false);
