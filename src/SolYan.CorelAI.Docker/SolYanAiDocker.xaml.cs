@@ -65,6 +65,61 @@ namespace SolYan.CorelAI.Docker
             await EnsureEngineAndRefreshAsync();
         }
 
+        private async void SaveKeyButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (_busy) return;
+
+            var key = (ApiKeyBox.Password ?? string.Empty).Trim();
+            if (key.Length < 20)
+            {
+                AppendActivity("Error", "Paste a valid OpenAI API key before saving.");
+                return;
+            }
+
+            SetBusy(true, "Saving API key…");
+            try
+            {
+                await EnsureEngineAsync();
+                var result = await _engine.SetApiKeyAsync(key);
+                ApiKeyBox.Clear();
+                AppendActivity("System", result);
+                SetStatus(true, "AI configured");
+                await RefreshContextAsync();
+            }
+            catch (Exception ex)
+            {
+                ShowError(ex);
+            }
+            finally
+            {
+                SetBusy(false, null);
+            }
+        }
+
+        private async void ClearKeyButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (_busy) return;
+
+            SetBusy(true, "Clearing API key…");
+            try
+            {
+                await EnsureEngineAsync();
+                var result = await _engine.ClearApiKeyAsync();
+                ApiKeyBox.Clear();
+                AppendActivity("System", result);
+                SetStatus(true, "API key cleared");
+                await RefreshContextAsync();
+            }
+            catch (Exception ex)
+            {
+                ShowError(ex);
+            }
+            finally
+            {
+                SetBusy(false, null);
+            }
+        }
+
         private async void PromptBox_PreviewKeyDown(object sender, KeyEventArgs e)
         {
             if (e.Key == Key.Enter && (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
@@ -205,7 +260,10 @@ namespace SolYan.CorelAI.Docker
             SendButton.IsEnabled = !busy;
             UndoButton.IsEnabled = !busy;
             RefreshButton.IsEnabled = !busy;
+            SaveKeyButton.IsEnabled = !busy;
+            ClearKeyButton.IsEnabled = !busy;
             PromptBox.IsEnabled = !busy;
+            ApiKeyBox.IsEnabled = !busy;
 
             if (!string.IsNullOrWhiteSpace(message))
             {
