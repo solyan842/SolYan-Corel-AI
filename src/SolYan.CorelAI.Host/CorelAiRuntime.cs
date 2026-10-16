@@ -24,7 +24,7 @@ public sealed class CorelAiRuntime
         _corel = corel;
         _http = http;
         _tools = tools;
-        _model = WindowsSettingsStore.NormalizeModel(string.IsNullOrWhiteSpace(model) ? "gpt-6-astra" : model);
+        _model = WindowsSettingsStore.NormalizeModel(string.IsNullOrWhiteSpace(model) ? "gpt-6.1-sol" : model);
 
         if (!string.IsNullOrWhiteSpace(initialApiKey))
             ConfigureApiKey(initialApiKey, persist: false);
