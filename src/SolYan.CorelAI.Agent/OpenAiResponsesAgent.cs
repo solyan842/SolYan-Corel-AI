@@ -7,7 +7,8 @@ namespace SolYan.CorelAI.Agent;
 
 public sealed class OpenAiResponsesAgent
 {
-    private const int MaxToolRounds = 20;
+    private const int MaxToolRounds = 24;
+    private const int MaxVisualReviews = 2;
 
     private const string SystemInstructions = """
 You are SolYan Corel AI, an expert CorelDRAW production assistant controlling the active Windows CorelDRAW document through deterministic local tools.
@@ -15,6 +16,7 @@ You are SolYan Corel AI, an expert CorelDRAW production assistant controlling th
 Rules:
 - Inspect the document and current selection before edits when page/object geometry or existing content matters.
 - All geometry exposed by SolYan Corel AI tools is in millimetres, regardless of the CorelDRAW document's native unit. Never convert millimetres yourself unless a tool explicitly asks for another unit.
+- A page preview may be supplied. Use it to understand visual composition, but use document/object tools as the source of truth for exact geometry, text, pages, layers and colors.
 - If compatibility or a CorelDRAW-version-specific operation is uncertain, call corel_get_capabilities before mutating the document.
 - Use the tools rather than pretending a CorelDRAW change happened.
 - Never invent a file path. Export only to an explicit path provided by the user/host.
@@ -22,6 +24,7 @@ Rules:
 - Prefer exact object-model operations. Do not describe mouse clicks.
 - Keep tool calls economical. If a tool fails, inspect the returned error and recover when possible.
 - The host wraps the whole task in one CorelDRAW undo command group.
+- During a visual verification pass, correct only visible problems related to the user's request. Do not make unrelated aesthetic changes.
 - After work is complete, briefly state what was actually changed. Never claim an action succeeded if its tool result failed.
 """;
 
@@ -38,10 +41,21 @@ Rules:
         _model = model;
     }
 
-    public async Task<string> RunAsync(string userPrompt, CancellationToken cancellationToken = default)
+    public Task<string> RunAsync(string userPrompt, CancellationToken cancellationToken = default) =>
+        RunAsync(userPrompt, previewProvider: null, cancellationToken);
+
+    public async Task<string> RunAsync(
+        string userPrompt,
+        Func<CancellationToken, Task<byte[]?>>? previewProvider,
+        CancellationToken cancellationToken = default)
     {
         string? previousResponseId = null;
-        JsonNode input = JsonValue.Create(userPrompt)!;
+        var initialPreview = previewProvider is null
+            ? null
+            : await TryCapturePreviewAsync(previewProvider, cancellationToken).ConfigureAwait(false);
+        JsonNode input = BuildUserInput(userPrompt, initialPreview);
+        var mutationsSinceVisualReview = false;
+        var visualReviewCount = 0;
 
         for (var round = 0; round < MaxToolRounds; round++)
         {
@@ -69,7 +83,23 @@ Rules:
             var calls = output.Where(n => n?["type"]?.GetValue<string>() == "function_call").ToArray();
 
             if (calls.Length == 0)
+            {
+                if (previewProvider is not null &&
+                    mutationsSinceVisualReview &&
+                    visualReviewCount < MaxVisualReviews)
+                {
+                    var reviewPreview = await TryCapturePreviewAsync(previewProvider, cancellationToken).ConfigureAwait(false);
+                    if (reviewPreview is not null)
+                    {
+                        visualReviewCount++;
+                        mutationsSinceVisualReview = false;
+                        input = BuildVisualReviewInput(reviewPreview, visualReviewCount);
+                        continue;
+                    }
+                }
+
                 return ExtractOutputText(output) ?? "Completed.";
+            }
 
             var toolOutputs = new JsonArray();
             foreach (var callNode in calls)
@@ -80,6 +110,9 @@ Rules:
                 var argsText = call["arguments"]?.GetValue<string>() ?? "{}";
                 var args = JsonNode.Parse(argsText)?.AsObject() ?? new JsonObject();
                 var result = await _tools.ExecuteAsync(name, args, cancellationToken).ConfigureAwait(false);
+
+                if (result.Success && IsVisualMutation(name))
+                    mutationsSinceVisualReview = true;
 
                 toolOutputs.Add(new JsonObject
                 {
@@ -110,6 +143,76 @@ Rules:
             });
         }
         return result;
+    }
+
+    private static JsonNode BuildUserInput(string userPrompt, byte[]? previewPng)
+    {
+        if (previewPng is null || previewPng.Length == 0)
+            return JsonValue.Create(userPrompt)!;
+
+        return BuildImageMessage(
+            userPrompt + "\n\nA PNG preview of the active CorelDRAW page is attached as visual context.",
+            previewPng);
+    }
+
+    private static JsonNode BuildVisualReviewInput(byte[] previewPng, int reviewNumber) =>
+        BuildImageMessage(
+            $"Visual verification pass {reviewNumber}. The attached PNG shows the active CorelDRAW page after your tool actions. " +
+            "Compare it with the user's original request. If something related to that request is visibly wrong or incomplete, " +
+            "use the available Corel tools to correct it. If it is correct, finish with a concise completion message.",
+            previewPng);
+
+    private static JsonArray BuildImageMessage(string text, byte[] previewPng)
+    {
+        var content = new JsonArray
+        {
+            new JsonObject
+            {
+                ["type"] = "input_text",
+                ["text"] = text
+            },
+            new JsonObject
+            {
+                ["type"] = "input_image",
+                ["image_url"] = "data:image/png;base64," + Convert.ToBase64String(previewPng),
+                ["detail"] = "high"
+            }
+        };
+
+        return new JsonArray
+        {
+            new JsonObject
+            {
+                ["role"] = "user",
+                ["content"] = content
+            }
+        };
+    }
+
+    private static async Task<byte[]?> TryCapturePreviewAsync(
+        Func<CancellationToken, Task<byte[]?>> previewProvider,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return await previewProvider(cancellationToken).ConfigureAwait(false);
+        }
+        catch
+        {
+            // Visual feedback is an enhancement. Object-model automation must remain usable if preview export is unavailable.
+            return null;
+        }
+    }
+
+    private static bool IsVisualMutation(string toolName)
+    {
+        if (toolName.StartsWith("corel_get_", StringComparison.Ordinal)) return false;
+        return toolName is not "corel_select_all"
+            and not "corel_activate_page"
+            and not "corel_activate_layer"
+            and not "corel_save"
+            and not "corel_save_as"
+            and not "corel_publish_pdf";
     }
 
     private static string? ExtractOutputText(JsonArray output)
