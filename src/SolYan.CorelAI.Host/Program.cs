@@ -1,14 +1,9 @@
 using SolYan.CorelAI.Agent;
 using SolYan.CorelAI.Core;
 using SolYan.CorelAI.Corel;
+using SolYan.CorelAI.Host;
 
 var apiKey = Environment.GetEnvironmentVariable("OPENAI_API_KEY");
-if (string.IsNullOrWhiteSpace(apiKey))
-{
-    Console.Error.WriteLine("OPENAI_API_KEY is not set.");
-    return 2;
-}
-
 var model = Environment.GetEnvironmentVariable("OPENAI_MODEL") ?? "gpt-6-astra";
 using var http = new HttpClient { Timeout = TimeSpan.FromMinutes(5) };
 using var corel = new CorelSession();
@@ -33,11 +28,45 @@ catch (Exception ex)
     Console.Error.WriteLine($"Capability probe warning: {ex.Message}");
 }
 
-var registry = new ToolRegistry(CorelToolCatalog.Create(corel));
-var agent = new OpenAiResponsesAgent(http, registry, apiKey, model);
+OpenAiResponsesAgent? agent = null;
+if (!string.IsNullOrWhiteSpace(apiKey))
+{
+    var registry = new ToolRegistry(CorelToolCatalog.Create(corel));
+    agent = new OpenAiResponsesAgent(http, registry, apiKey, model);
+}
+
+var runtime = new CorelAiRuntime(corel, agent);
+
+if (args.Any(arg => arg.Equals("--pipe", StringComparison.OrdinalIgnoreCase)))
+{
+    using var cts = new CancellationTokenSource();
+    Console.CancelKeyPress += (_, eventArgs) =>
+    {
+        eventArgs.Cancel = true;
+        cts.Cancel();
+    };
+
+    Console.WriteLine($"SolYan Corel AI pipe server — {PipeAgentServer.PipeName}");
+    Console.WriteLine(runtime.AiConfigured
+        ? $"AI configured with model {model}."
+        : "OPENAI_API_KEY is not set; inspection/undo are available but AI tasks are disabled.");
+
+    try
+    {
+        await new PipeAgentServer(runtime).RunAsync(cts.Token);
+    }
+    catch (OperationCanceledException) when (cts.IsCancellationRequested)
+    {
+        // Normal Ctrl+C shutdown.
+    }
+
+    return 0;
+}
 
 Console.WriteLine($"SolYan Corel AI — {model}");
-Console.WriteLine("CorelDRAW connected. AI geometry uses millimetres. Type a task, /undo, /capabilities, or /quit.");
+Console.WriteLine(runtime.AiConfigured
+    ? "CorelDRAW connected. AI geometry uses millimetres. Type a task, /undo, /capabilities, /context, or /quit."
+    : "CorelDRAW connected, but OPENAI_API_KEY is not set. /undo, /capabilities and /context still work.");
 
 while (true)
 {
@@ -45,39 +74,33 @@ while (true)
     var prompt = Console.ReadLine();
     if (prompt is null || prompt.Equals("/quit", StringComparison.OrdinalIgnoreCase)) break;
 
-    if (prompt.Equals("/undo", StringComparison.OrdinalIgnoreCase))
-    {
-        await corel.UndoAsync();
-        Console.WriteLine("Undone in CorelDRAW.");
-        continue;
-    }
-
-    if (prompt.Equals("/capabilities", StringComparison.OrdinalIgnoreCase))
-    {
-        Console.WriteLine((await corel.GetCapabilitiesAsync()).ToJsonString());
-        continue;
-    }
-
-    if (string.IsNullOrWhiteSpace(prompt)) continue;
-
-    var grouped = false;
     try
     {
-        grouped = await corel.BeginAiJobAsync("SolYan AI");
-        var answer = await agent.RunAsync(prompt);
-        Console.WriteLine(answer);
+        if (prompt.Equals("/undo", StringComparison.OrdinalIgnoreCase))
+        {
+            await runtime.UndoAsync();
+            Console.WriteLine("Undone in CorelDRAW.");
+            continue;
+        }
+
+        if (prompt.Equals("/capabilities", StringComparison.OrdinalIgnoreCase))
+        {
+            Console.WriteLine((await runtime.GetCapabilitiesAsync()).ToJsonString());
+            continue;
+        }
+
+        if (prompt.Equals("/context", StringComparison.OrdinalIgnoreCase))
+        {
+            Console.WriteLine((await runtime.GetContextAsync()).ToJsonString());
+            continue;
+        }
+
+        if (string.IsNullOrWhiteSpace(prompt)) continue;
+        Console.WriteLine(await runtime.RunTaskAsync(prompt));
     }
     catch (Exception ex)
     {
         Console.Error.WriteLine($"Task failed: {ex.Message}");
-    }
-    finally
-    {
-        if (grouped)
-        {
-            try { await corel.EndAiJobAsync(); }
-            catch (Exception ex) { Console.Error.WriteLine($"Could not close Corel undo group: {ex.Message}"); }
-        }
     }
 }
 
