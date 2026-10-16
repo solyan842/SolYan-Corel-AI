@@ -10,7 +10,8 @@ public sealed class CorelAiRuntime
     private readonly CorelSession _corel;
     private readonly HttpClient _http;
     private readonly ToolRegistry _tools;
-    private readonly string _model;
+    private string _model;
+    private string? _apiKey;
     private OpenAiResponsesAgent? _agent;
 
     public CorelAiRuntime(
@@ -23,7 +24,7 @@ public sealed class CorelAiRuntime
         _corel = corel;
         _http = http;
         _tools = tools;
-        _model = string.IsNullOrWhiteSpace(model) ? "gpt-6-astra" : model.Trim();
+        _model = WindowsSettingsStore.NormalizeModel(string.IsNullOrWhiteSpace(model) ? "gpt-6-astra" : model);
 
         if (!string.IsNullOrWhiteSpace(initialApiKey))
             ConfigureApiKey(initialApiKey, persist: false);
@@ -39,14 +40,24 @@ public sealed class CorelAiRuntime
             throw new ArgumentException("OpenAI API key is empty or invalid.", nameof(apiKey));
 
         if (persist) WindowsSecretStore.SaveApiKey(key);
-        _agent = new OpenAiResponsesAgent(_http, _tools, key, _model);
+        _apiKey = key;
+        RebuildAgent();
     }
 
     public void ClearApiKey()
     {
         WindowsSecretStore.ClearApiKey();
+        _apiKey = null;
         _agent = null;
         _http.DefaultRequestHeaders.Authorization = null;
+    }
+
+    public void ConfigureModel(string model, bool persist = true)
+    {
+        var normalized = WindowsSettingsStore.NormalizeModel(model);
+        if (persist) WindowsSettingsStore.SaveModel(normalized);
+        _model = normalized;
+        RebuildAgent();
     }
 
     public Task<JsonObject> GetCapabilitiesAsync(CancellationToken cancellationToken = default) =>
@@ -110,5 +121,12 @@ public sealed class CorelAiRuntime
             if (grouped && !groupClosed)
                 await _corel.EndAiJobAsync(cancellationToken).ConfigureAwait(false);
         }
+    }
+
+    private void RebuildAgent()
+    {
+        _agent = string.IsNullOrWhiteSpace(_apiKey)
+            ? null
+            : new OpenAiResponsesAgent(_http, _tools, _apiKey, _model);
     }
 }
