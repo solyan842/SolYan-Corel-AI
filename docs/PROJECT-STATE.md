@@ -22,7 +22,7 @@ SolYan Corel AI is a high-capability AI operator for CorelDRAW on Windows. It us
 - OpenAI API key is stored using Windows user-scoped secure storage.
 - Default model is `gpt-6.1-sol`; supported model selection remains configurable.
 - The agent can receive an active-page PNG preview and perform up to two post-edit visual verification passes.
-- Read-only inspection tools do not trigger visual mutation review.
+- Read-only inspection/export tools do not trigger visual mutation review.
 
 ## Implemented Corel capability groups
 
@@ -58,6 +58,8 @@ SolYan Corel AI is a high-capability AI operator for CorelDRAW on Windows. It us
 - duplicate grid/array
 - group and ungroup
 - move selection to layer
+- high-level `fit selection to page` workflow with exact mm margins, optional aspect preservation, and explicit horizontal/vertical alignment
+- high-level `arrange selection grid` workflow that preserves object size and returns final layout geometry
 
 ### Shape / vector operations
 - rectangle and artistic text creation
@@ -76,6 +78,9 @@ SolYan Corel AI is a high-capability AI operator for CorelDRAW on Windows. It us
 ### Export / visual feedback
 - PDF publishing
 - PNG/JPEG/SVG export capability
+- safe multi-page PNG/JPEG/SVG batch export with explicit existing output directory, page range, deterministic names and opt-in overwrite
+- batch export restores the originally active page after completion
+- export-only tools are not treated as visual document mutations
 - active-page PNG preview for multimodal review
 - self-contained Windows engine publishing
 - installable Corel add-on packaging from CI
@@ -108,21 +113,24 @@ SolYan Corel AI is a high-capability AI operator for CorelDRAW on Windows. It us
 
 ## Verification state
 
-- GitHub Actions run #112 on `dev/v0.1-corel-agent` completed successfully for commit `bb4c6a421ab5dd4875e1e91ae166fac3d948b182`.
-- Run #112 passed restore, build, self-contained engine publish, Corel add-on assembly, and artifact upload.
-- Artifact `SolYanCorelAI-win-x64` was produced successfully: artifact ID `12026186741`, size `30632852` bytes, SHA-256 digest `c171fcd5468ee2d1a5acd41d37d35bdb05ae08e3036ec5aeae93b73d29362108`.
-- Preflight, diagnostics, and the opt-in mutation/undo smoke-test stack are build-verified by run #112.
+- GitHub Actions run #116 on `dev/v0.1-corel-agent` completed successfully for commit `52c1f4d32b040175ba29142343032b73eea9b038`.
+- Run #116 passed restore, build, self-contained engine publish, Corel add-on assembly, and artifact upload.
+- Artifact `SolYanCorelAI-win-x64` from run #116: artifact ID `12026089387`, size `30637592` bytes, SHA-256 digest `11a09c8a516bcf1fa9cf961b0eff5a5c4f3f49b6d92ed5ad96e826c9706191bf`.
+- The high-level fit-to-page and grid-layout workflows are build-verified by run #116.
+- Batch export, README refresh, and the field-test guide were added after run #116 and require a newer successful repository-wide CI checkpoint before being called build-verified.
 - Real CorelDRAW COM behavior is **not yet field-passed** because GitHub-hosted runners do not contain a supported CorelDRAW runtime.
 
 ## Known repository condition
 
 `main` currently contains the mandatory agent operating gate but does not yet contain the full implementation tree. A `main` workflow run can therefore fail if it attempts to build solution files that are still only on the dev branch. Do not treat that as a dev-branch compile failure. Keep implementation on the dev branch until the integration decision is made.
 
-## Next implementation priorities
+## Field-test gate
 
-1. Add reusable high-level deterministic layout workflows, beginning with fit-to-page/margins and grid arrangement.
-2. Add high-level batch output workflows with explicit destination paths and predictable file naming.
-3. Field-test the installable artifact against the user's actual CorelDRAW version before claiming runtime PASS.
+`docs/FIELD-TEST.md` is the authoritative runtime test sequence. It starts with non-destructive Diagnostics and Preflight, then requires explicit confirmation for the Mutation Test before deterministic edits, layout workflows, export and visual-review testing.
+
+## Next implementation priority
+
+Obtain a green CI/package checkpoint for the current dev HEAD, then field-test the installable artifact against the user's actual CorelDRAW installation. Do not claim Corel runtime PASS before that field test.
 
 ## Runtime PASS definition
 
@@ -137,5 +145,6 @@ A release candidate is not considered Corel runtime-passed until the packaged ad
 - preview PNG export works;
 - at least one text/style edit works;
 - at least one import/export operation works;
+- batch page export works and restores the original active page;
 - preflight completes without modifying the document;
 - a representative multi-step natural-language task completes and visual review does not introduce unrelated changes.
