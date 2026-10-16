@@ -100,6 +100,42 @@ namespace SolYan.CorelAI.Docker
             finally { SetBusy(false, null); }
         }
 
+        private async void MutationTestButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (_busy) return;
+
+            var confirmation = MessageBox.Show(
+                "Mutation + Undo Smoke Test will briefly create a temporary 5 × 5 mm rectangle in the active CorelDRAW document and immediately undo it.\n\n" +
+                "Important: creating a new CorelDRAW action can clear existing Redo history. The test is never run automatically.\n\n" +
+                "Run the test now?",
+                "SolYan AI — Mutation Test",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning);
+
+            if (confirmation != MessageBoxResult.Yes) return;
+
+            SetBusy(true, "Running mutation + undo test…");
+            try
+            {
+                await EnsureEngineAsync();
+                var result = await _engine.RunMutationUndoSmokeTestAsync();
+                var restored = ExtractJsonBoolean(result, "restored") == true;
+
+                AppendActivity(
+                    "Mutation Test",
+                    (restored
+                        ? "PASS: temporary object was created and the document shape count was restored by one Undo."
+                        : "FAIL: the smoke test did not verify a fully restored document shape count.") +
+                    Environment.NewLine + Compact(result, 5000));
+                SetStatus(restored, restored
+                    ? "Mutation test passed"
+                    : "Mutation test failed");
+                await RefreshContextAsync();
+            }
+            catch (Exception ex) { ShowError(ex); }
+            finally { SetBusy(false, null); }
+        }
+
         private async void SaveKeyButton_Click(object sender, RoutedEventArgs e)
         {
             if (_busy) return;
@@ -351,6 +387,7 @@ namespace SolYan.CorelAI.Docker
             RefreshButton.IsEnabled = !busy;
             PreflightButton.IsEnabled = !busy;
             DiagnosticsButton.IsEnabled = !busy;
+            MutationTestButton.IsEnabled = !busy;
             SaveKeyButton.IsEnabled = !busy;
             ClearKeyButton.IsEnabled = !busy;
             ApplyModelButton.IsEnabled = !busy;
