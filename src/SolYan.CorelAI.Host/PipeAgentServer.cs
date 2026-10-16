@@ -65,6 +65,9 @@ public sealed class PipeAgentServer
         if (command.Equals("PREFLIGHT", StringComparison.Ordinal))
             return Ok((await _runtime.RunPreflightAsync(150, flagRgb: true, checkFonts: true, cancellationToken).ConfigureAwait(false)).ToJsonString());
 
+        if (command.Equals("DIAGNOSTICS", StringComparison.Ordinal))
+            return Ok((await _runtime.RunDiagnosticsAsync(cancellationToken).ConfigureAwait(false)).ToJsonString());
+
         if (command.Equals("UNDO", StringComparison.Ordinal))
         {
             await _runtime.UndoAsync(cancellationToken).ConfigureAwait(false);
