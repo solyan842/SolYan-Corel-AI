@@ -80,15 +80,18 @@ if (args.Any(arg => arg.Equals("--pipe", StringComparison.OrdinalIgnoreCase)))
         cts.Cancel();
     };
 
-    StartupLog($"Starting current-user named pipe server {PipeAgentServer.PipeName}.");
-    Console.WriteLine($"SolYan Corel AI pipe server — {PipeAgentServer.PipeName}");
-    Console.WriteLine(runtime.AiConfigured
-        ? $"AI configured with model {runtime.Model}."
-        : "No OpenAI API key is configured yet; the Corel Docker can configure one for this Windows user.");
-
     try
     {
-        await new PipeAgentServer(runtime).RunAsync(cts.Token);
+        await new PipeAgentServer(runtime).RunAsync(
+            cts.Token,
+            () =>
+            {
+                StartupLog($"Current-user named pipe server listening: {PipeAgentServer.PipeName}.");
+                Console.WriteLine($"SolYan Corel AI pipe server listening — {PipeAgentServer.PipeName}");
+                Console.WriteLine(runtime.AiConfigured
+                    ? $"AI configured with model {runtime.Model}."
+                    : "No OpenAI API key is configured yet; the Corel Docker can configure one for this Windows user.");
+            });
     }
     catch (OperationCanceledException) when (cts.IsCancellationRequested)
     {
@@ -98,6 +101,7 @@ if (args.Any(arg => arg.Equals("--pipe", StringComparison.OrdinalIgnoreCase)))
     {
         StartupLog("Pipe server failed: " + ex);
         Console.Error.WriteLine($"Pipe server failed: {ex}");
+        Console.Error.WriteLine($"Startup log: {startupLogPath}");
         return 4;
     }
 
