@@ -12,10 +12,48 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
+
       - name: Restore
         run: dotnet restore SolYan.CorelAI.sln
+
       - name: Build
         run: dotnet build SolYan.CorelAI.sln -c Release --no-restore
+
+      - name: Publish self-contained engine
+        run: >-
+          dotnet publish src/SolYan.CorelAI.Host/SolYan.CorelAI.Host.csproj
+          -c Release
+          -r win-x64
+          --self-contained true
+          -p:PublishSingleFile=true
+          -p:IncludeNativeLibrariesForSelfExtract=true
+          -o dist/engine
+
+      - name: Assemble Corel addon
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $package = Join-Path $PWD 'dist/package'
+          $addon = Join-Path $package 'SolYanCorelAI'
+          $engine = Join-Path $addon 'Engine'
+          New-Item -ItemType Directory -Force -Path $addon, $engine | Out-Null
+
+          Copy-Item 'packaging/CorelAddon/SolYanCorelAI/*' $addon -Recurse -Force
+          Copy-Item 'src/SolYan.CorelAI.Docker/bin/Release/net48/SolYan.CorelAI.Docker.dll' $addon -Force
+          Copy-Item 'dist/engine/*' $engine -Recurse -Force
+          Copy-Item 'packaging/Install-SolYanCorelAI.ps1' $package -Force
+
+          $zip = Join-Path $PWD 'dist/SolYanCorelAI.zip'
+          if (Test-Path $zip) { Remove-Item $zip -Force }
+          Compress-Archive -Path "$package/*" -DestinationPath $zip -CompressionLevel Optimal
+
+      - name: Upload installable addon
+        uses: actions/upload-artifact@v4
+        with:
+          name: SolYanCorelAI-win-x64
+          path: dist/SolYanCorelAI.zip
+          if-no-files-found: error
