@@ -113,11 +113,10 @@ SolYan Corel AI is a high-capability AI operator for CorelDRAW on Windows. It us
 
 ## Verification state
 
-- GitHub Actions run #116 on `dev/v0.1-corel-agent` completed successfully for commit `52c1f4d32b040175ba29142343032b73eea9b038`.
-- Run #116 passed restore, build, self-contained engine publish, Corel add-on assembly, and artifact upload.
-- Artifact `SolYanCorelAI-win-x64` from run #116: artifact ID `12026089387`, size `30637592` bytes, SHA-256 digest `11a09c8a516bcf1fa9cf961b0eff5a5c4f3f49b6d92ed5ad96e826c9706191bf`.
-- The high-level fit-to-page and grid-layout workflows are build-verified by run #116.
-- Batch export, README refresh, and the field-test guide were added after run #116 and require a newer successful repository-wide CI checkpoint before being called build-verified.
+- GitHub Actions run #122 on `dev/v0.1-corel-agent` completed successfully for commit `d3f16ad7c5197bf3680f768686ad8f1be3e76915`.
+- Run #122 passed restore, build, self-contained engine publish, Corel add-on assembly, and artifact upload.
+- Artifact `SolYanCorelAI-win-x64` from run #122: artifact ID `12027155224`, size `30641588` bytes, SHA-256 digest `a8f48b66ef54e5a460a6a4f169822f4992f7c7615189a3d1083937c18749a66c`.
+- The current codebase through layout workflows, safe multi-page batch export, updated read-only export classification, README and field-test documentation is CI/build-verified by run #122.
 - Real CorelDRAW COM behavior is **not yet field-passed** because GitHub-hosted runners do not contain a supported CorelDRAW runtime.
 
 ## Known repository condition
@@ -128,9 +127,9 @@ SolYan Corel AI is a high-capability AI operator for CorelDRAW on Windows. It us
 
 `docs/FIELD-TEST.md` is the authoritative runtime test sequence. It starts with non-destructive Diagnostics and Preflight, then requires explicit confirmation for the Mutation Test before deterministic edits, layout workflows, export and visual-review testing.
 
-## Next implementation priority
+## Current blocker / next action
 
-Obtain a green CI/package checkpoint for the current dev HEAD, then field-test the installable artifact against the user's actual CorelDRAW installation. Do not claim Corel runtime PASS before that field test.
+The build-level implementation gate is green. The next meaningful verification requires a real Windows/CorelDRAW installation. Install the latest successful `SolYanCorelAI-win-x64` artifact on the user's machine and execute `docs/FIELD-TEST.md`. Do not widen the COM implementation by guesswork before collecting that runtime evidence.
 
 ## Runtime PASS definition
 
