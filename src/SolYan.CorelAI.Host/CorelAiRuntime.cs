@@ -30,6 +30,7 @@ public sealed class CorelAiRuntime
         return new JsonObject
         {
             ["ai_configured"] = AiConfigured,
+            ["visual_feedback"] = true,
             ["document"] = document,
             ["selection"] = selection
         };
@@ -49,7 +50,10 @@ public sealed class CorelAiRuntime
         var groupClosed = false;
         try
         {
-            return await _agent.RunAsync(prompt, cancellationToken).ConfigureAwait(false);
+            return await _agent.RunAsync(
+                prompt,
+                async ct => await _corel.RenderPagePreviewPngAsync(110, ct).ConfigureAwait(false),
+                cancellationToken).ConfigureAwait(false);
         }
         catch
         {
@@ -63,7 +67,7 @@ public sealed class CorelAiRuntime
                 }
                 catch
                 {
-                    // Preserve the original exception. The host will report rollback trouble separately on the next action.
+                    // Preserve the original exception. The next action can report rollback trouble if Corel rejected it.
                 }
             }
             throw;
