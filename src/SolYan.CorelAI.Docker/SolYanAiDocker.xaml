@@ -89,16 +89,21 @@
       <Grid.RowDefinitions>
         <RowDefinition Height="Auto" />
         <RowDefinition Height="Auto" />
+        <RowDefinition Height="Auto" />
       </Grid.RowDefinitions>
-      <UniformGrid Grid.Row="0" Columns="4">
+      <UniformGrid Grid.Row="0" Columns="3">
         <Button x:Name="RefreshButton" Content="Refresh" Margin="0,0,4,0" Click="RefreshButton_Click" />
         <Button x:Name="PreflightButton" Content="Preflight" Margin="0,0,4,0" Click="PreflightButton_Click"
                 ToolTip="Check fonts, text overflow, bitmap resolution, RGB usage, locked objects and hidden/non-editable layers." />
-        <Button x:Name="DiagnosticsButton" Content="Diagnostics" Margin="0,0,4,0" Click="DiagnosticsButton_Click"
+        <Button x:Name="DiagnosticsButton" Content="Diagnostics" Click="DiagnosticsButton_Click"
                 ToolTip="Run non-destructive Corel runtime, preview, preflight and engine health checks." />
+      </UniformGrid>
+      <UniformGrid Grid.Row="1" Columns="2" Margin="0,4,0,0">
+        <Button x:Name="MutationTestButton" Content="Mutation Test" Margin="0,0,4,0" Click="MutationTestButton_Click"
+                ToolTip="Explicit smoke test only. Briefly creates a 5 mm rectangle and immediately undoes it; may clear existing Redo history." />
         <Button x:Name="UndoButton" Content="Undo AI" Click="UndoButton_Click" />
       </UniformGrid>
-      <TextBlock Grid.Row="1" Text="Ctrl+Enter to run" Foreground="#7F8998" FontSize="10" Margin="0,6,0,0" />
+      <TextBlock Grid.Row="2" Text="Ctrl+Enter to run" Foreground="#7F8998" FontSize="10" Margin="0,6,0,0" />
     </Grid>
   </Grid>
 </UserControl>
