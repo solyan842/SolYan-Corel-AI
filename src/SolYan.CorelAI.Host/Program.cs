@@ -35,7 +35,8 @@ catch (Exception ex)
 
 var tools = CorelToolCatalog.Create(corel)
     .Concat(CorelAdvancedToolCatalog.Create(corel))
-    .Concat(CorelExportToolCatalog.Create(corel));
+    .Concat(CorelExportToolCatalog.Create(corel))
+    .Concat(CorelPreflightToolCatalog.Create(corel));
 var registry = new ToolRegistry(tools);
 var runtime = new CorelAiRuntime(corel, http, registry, model, apiKey);
 
