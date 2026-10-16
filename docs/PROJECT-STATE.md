@@ -92,12 +92,18 @@ SolYan Corel AI is a high-capability AI operator for CorelDRAW on Windows. It us
 - hidden and non-editable layer reporting
 - detailed issue payload capped at 500 entries while retaining whole-document summary counts
 
+### Runtime diagnostics
+- non-destructive diagnostics available from the Docker, IPC and CLI
+- reports Corel capability probe, document context, selection context, active-page preview export and preflight health
+- reports local runtime OS/framework/process architecture and AI configuration without exposing the API key
+- document-dependent checks are explicitly skipped when no document is open rather than reported as false failures
+
 ## Verification state
 
-- GitHub Actions run #98 on `dev/v0.1-corel-agent` completed successfully for commit `6324dd006ad0207a2f1abfbfbcf73f4033d37655`.
-- Run #98 passed restore, build, self-contained engine publish, Corel add-on assembly, and artifact upload.
-- Artifact `SolYanCorelAI-win-x64` was produced successfully: artifact ID `12025284902`, size `30622046` bytes, SHA-256 digest `c736962d4d5a62eee9f96c983a5b8cf393ca9f0e060228e6508aeb6a508714ef`.
-- The preflight engine, bounded payload, AI tool registration, IPC command, Docker client and one-click Docker UI are build-verified by run #98.
+- GitHub Actions run #105 on `dev/v0.1-corel-agent` completed successfully for commit `d7bd7fa0996e8934c37a9558574d0a32e10abc05`.
+- Run #105 passed restore, build, self-contained engine publish, Corel add-on assembly, and artifact upload.
+- Artifact `SolYanCorelAI-win-x64` was produced successfully: artifact ID `12025569895`, size `30628597` bytes, SHA-256 digest `c10fc410c5ac908aa4fa3070f578388f6bd7d025cda226a5c769ddae71f19414`.
+- Preflight and the non-destructive runtime diagnostics stack are build-verified through the Docker UI, IPC and CLI by run #105.
 - Real CorelDRAW COM behavior is **not yet field-passed** because GitHub-hosted runners do not contain a supported CorelDRAW runtime.
 
 ## Known repository condition
@@ -106,11 +112,9 @@ SolYan Corel AI is a high-capability AI operator for CorelDRAW on Windows. It us
 
 ## Next implementation priorities
 
-1. Add a non-destructive Windows/Corel runtime diagnostics command that reports exact Corel version, capability probes, document context, preview export, preflight and local IPC/AI configuration health.
-2. Surface the diagnostics report in the Docker UI for field testing on the user's CorelDRAW installation.
-3. Add an opt-in mutation/undo smoke test that creates a temporary test object inside one command group and restores the document immediately; never run this automatically.
-4. Add reusable high-level workflow tools for common production tasks instead of exposing uncontrolled raw COM methods.
-5. Field-test the installable artifact against the user's actual CorelDRAW version before claiming runtime PASS.
+1. Add an opt-in mutation/undo smoke test that creates a temporary test object inside one command group and restores the document immediately; never run this automatically and warn that a new Corel action may clear existing Redo history.
+2. Add reusable high-level workflow tools for common production tasks instead of exposing uncontrolled raw COM methods.
+3. Field-test the installable artifact against the user's actual CorelDRAW version before claiming runtime PASS.
 
 ## Runtime PASS definition
 
