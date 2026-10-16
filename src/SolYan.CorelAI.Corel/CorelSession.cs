@@ -103,7 +103,7 @@ public sealed partial class CorelSession : IDisposable
 
             dynamic doc = app.ActiveDocument;
             dynamic page = doc.ActivePage;
-            dynamic selection = doc.ActiveSelectionRange;
+            dynamic selection = app.ActiveSelectionRange;
             var unit = Convert.ToInt32(doc.Unit);
 
             return new JsonObject
@@ -129,7 +129,7 @@ public sealed partial class CorelSession : IDisposable
         {
             dynamic app = App();
             dynamic doc = app.ActiveDocument;
-            dynamic range = doc.ActiveSelectionRange;
+            dynamic range = app.ActiveSelectionRange;
             var result = new JsonArray();
 
             for (var i = 1; i <= Convert.ToInt32(range.Count); i++)
@@ -163,7 +163,7 @@ public sealed partial class CorelSession : IDisposable
         {
             dynamic app = App();
             dynamic doc = app.ActiveDocument;
-            doc.ActiveSelectionRange.Move(ToDocumentUnits(app, doc, dxMm), ToDocumentUnits(app, doc, dyMm));
+            app.ActiveSelectionRange.Move(ToDocumentUnits(app, doc, dxMm), ToDocumentUnits(app, doc, dyMm));
         }, cancellationToken);
 
     public Task ResizeSelectionAsync(double widthMm, double heightMm, bool preserveAspect, CancellationToken cancellationToken = default) =>
@@ -171,7 +171,7 @@ public sealed partial class CorelSession : IDisposable
         {
             dynamic app = App();
             dynamic doc = app.ActiveDocument;
-            dynamic range = doc.ActiveSelectionRange;
+            dynamic range = app.ActiveSelectionRange;
             if (Convert.ToInt32(range.Count) == 0) throw new InvalidOperationException("Nothing is selected.");
 
             var currentWidthMm = ToMm(app, doc, Convert.ToDouble(range.SizeWidth));
@@ -198,8 +198,9 @@ public sealed partial class CorelSession : IDisposable
     public Task CenterSelectionOnPageAsync(CancellationToken cancellationToken = default) =>
         MutateAsync(() =>
         {
-            dynamic doc = App().ActiveDocument;
-            dynamic range = doc.ActiveSelectionRange;
+            dynamic app = App();
+            dynamic doc = app.ActiveDocument;
+            dynamic range = app.ActiveSelectionRange;
             if (Convert.ToInt32(range.Count) == 0) throw new InvalidOperationException("Nothing is selected.");
 
             double x = 0, y = 0, w = 0, h = 0;
@@ -214,7 +215,7 @@ public sealed partial class CorelSession : IDisposable
         {
             dynamic app = App();
             dynamic color = app.CreateRGBColor(ClampByte(r), ClampByte(g), ClampByte(b));
-            dynamic range = app.ActiveDocument.ActiveSelectionRange;
+            dynamic range = app.ActiveSelectionRange;
             for (var i = 1; i <= Convert.ToInt32(range.Count); i++) range[i].Fill.ApplyUniformFill(color);
         }, cancellationToken);
 
@@ -226,7 +227,7 @@ public sealed partial class CorelSession : IDisposable
             dynamic app = App();
             dynamic doc = app.ActiveDocument;
             dynamic color = app.CreateRGBColor(ClampByte(r), ClampByte(g), ClampByte(b));
-            dynamic range = doc.ActiveSelectionRange;
+            dynamic range = app.ActiveSelectionRange;
             var width = ToDocumentUnits(app, doc, widthMm);
 
             for (var i = 1; i <= Convert.ToInt32(range.Count); i++)
@@ -239,7 +240,7 @@ public sealed partial class CorelSession : IDisposable
     public Task SetSelectedTextAsync(string text, CancellationToken cancellationToken = default) =>
         MutateAsync(() =>
         {
-            dynamic range = App().ActiveDocument.ActiveSelectionRange;
+            dynamic range = App().ActiveSelectionRange;
             var changed = 0;
             for (var i = 1; i <= Convert.ToInt32(range.Count); i++)
             {
@@ -282,13 +283,13 @@ public sealed partial class CorelSession : IDisposable
         }, cancellationToken);
 
     public Task DuplicateSelectionAsync(CancellationToken cancellationToken = default) =>
-        MutateAsync(() => App().ActiveDocument.ActiveSelectionRange.Duplicate().CreateSelection(), cancellationToken);
+        MutateAsync(() => App().ActiveSelectionRange.Duplicate().CreateSelection(), cancellationToken);
 
     public Task GroupSelectionAsync(CancellationToken cancellationToken = default) =>
-        MutateAsync(() => App().ActiveDocument.ActiveSelectionRange.Group().CreateSelection(), cancellationToken);
+        MutateAsync(() => App().ActiveSelectionRange.Group().CreateSelection(), cancellationToken);
 
     public Task DeleteSelectionAsync(CancellationToken cancellationToken = default) =>
-        MutateAsync(() => App().ActiveDocument.ActiveSelectionRange.Delete(), cancellationToken);
+        MutateAsync(() => App().ActiveSelectionRange.Delete(), cancellationToken);
 
     public Task PublishPdfAsync(string path, CancellationToken cancellationToken = default) =>
         MutateAsync(() => App().ActiveDocument.PublishToPDF(Path.GetFullPath(path)), cancellationToken);
