@@ -18,6 +18,18 @@
   <xsl:template match="uiConfig/items">
     <xsl:copy>
       <xsl:apply-templates select="node()|@*" />
+
+      <!-- Command shown in Window > Dockers. -->
+      <itemData guid="12CAF963-E66C-4C9E-AA6C-B8C677F3E352"
+                noBmpOnMenu="true"
+                type="checkButton"
+                check="*Docker('B443AE57-8760-42A4-946B-080458E5162C')"
+                dynamicCategory="2cc24a3e-fe24-4708-9a74-9c75406eebcd"
+                userCaption="SolYan AI"
+                userToolTip="Show or hide the SolYan AI docker"
+                enable="true" />
+
+      <!-- WPF control hosted by CorelDRAW. -->
       <itemData guid="2ED025F2-6C26-4C11-8B01-1489063BA939"
                 type="wpfhost"
                 hostedType="Addons\SolYanCorelAI\SolYan.CorelAI.Docker.dll,SolYan.CorelAI.Docker.SolYanAiDocker"
