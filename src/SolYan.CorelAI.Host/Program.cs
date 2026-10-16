@@ -68,8 +68,8 @@ if (args.Any(arg => arg.Equals("--pipe", StringComparison.OrdinalIgnoreCase)))
 
 Console.WriteLine($"SolYan Corel AI — {runtime.Model}");
 Console.WriteLine(runtime.AiConfigured
-    ? "CorelDRAW connected. AI geometry uses millimetres and visual feedback is enabled. Type a task, /undo, /capabilities, /context, or /quit."
-    : "CorelDRAW connected, but no OpenAI API key is configured. The installed Docker can save one securely for this Windows user.");
+    ? "CorelDRAW connected. AI geometry uses millimetres and visual feedback is enabled. Type a task, /undo, /capabilities, /context, /preflight, /diagnostics, or /quit."
+    : "CorelDRAW connected, but no OpenAI API key is configured. Inspection commands still work; the installed Docker can save an API key securely for this Windows user.");
 
 while (true)
 {
@@ -95,6 +95,18 @@ while (true)
         if (prompt.Equals("/context", StringComparison.OrdinalIgnoreCase))
         {
             Console.WriteLine((await runtime.GetContextAsync()).ToJsonString());
+            continue;
+        }
+
+        if (prompt.Equals("/preflight", StringComparison.OrdinalIgnoreCase))
+        {
+            Console.WriteLine((await runtime.RunPreflightAsync()).ToJsonString());
+            continue;
+        }
+
+        if (prompt.Equals("/diagnostics", StringComparison.OrdinalIgnoreCase))
+        {
+            Console.WriteLine((await runtime.RunDiagnosticsAsync()).ToJsonString());
             continue;
         }
 
