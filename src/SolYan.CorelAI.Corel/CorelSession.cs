@@ -2,7 +2,7 @@ using System.Text.Json.Nodes;
 
 namespace SolYan.CorelAI.Corel;
 
-public sealed class CorelSession : IDisposable
+public sealed partial class CorelSession : IDisposable
 {
     private const int CdrMillimeter = 3;
 
