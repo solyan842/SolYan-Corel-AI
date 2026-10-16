@@ -2,7 +2,7 @@ namespace SolYan.CorelAI.Host;
 
 internal static class WindowsSettingsStore
 {
-    private const string DefaultModel = "gpt-6-astra";
+    private const string DefaultModel = "gpt-6.1-sol";
 
     private static string SettingsDirectory => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
@@ -38,12 +38,12 @@ internal static class WindowsSettingsStore
     {
         var normalized = model?.Trim();
         if (!IsAllowedModel(normalized))
-            throw new ArgumentException("Unsupported model. Choose gpt-6-astra, gpt-6.1-sol, or gpt-6-luna.", nameof(model));
+            throw new ArgumentException("Unsupported model. Choose gpt-6.1-sol, gpt-6-astra, or gpt-6-luna.", nameof(model));
         return normalized!;
     }
 
     private static bool IsAllowedModel(string? model) => model is
-        "gpt-6-astra" or
         "gpt-6.1-sol" or
+        "gpt-6-astra" or
         "gpt-6-luna";
 }
