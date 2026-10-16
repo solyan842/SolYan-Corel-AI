@@ -7,6 +7,7 @@ public sealed partial class CorelSession
     private const int CdrJpeg = 774;
     private const int CdrSvg = 1345;
     private const int CdrSelection = 2;
+    private const int CdrNormalAntiAliasing = 1;
 
     public Task<JsonObject> ExportRasterAsync(
         string path,
@@ -50,7 +51,7 @@ public sealed partial class CorelSession
                 0,
                 resolutionDpi,
                 resolutionDpi,
-                Type.Missing,
+                CdrNormalAntiAliasing,
                 false,
                 transparent,
                 true,
@@ -58,8 +59,15 @@ public sealed partial class CorelSession
 
             if (filter == CdrJpeg)
             {
-                try { exportFilter.Compression = jpegQuality; }
-                catch { /* Some Corel filter versions do not expose this property until Finish. */ }
+                try
+                {
+                    exportFilter.Compression = jpegQuality;
+                    exportFilter.Optimized = true;
+                }
+                catch
+                {
+                    // Corel versions can expose format-specific filter properties differently.
+                }
             }
 
             exportFilter.Finish();
