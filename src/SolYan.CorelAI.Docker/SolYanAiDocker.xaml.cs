@@ -55,6 +55,29 @@ namespace SolYan.CorelAI.Docker
             await EnsureEngineAndRefreshAsync();
         }
 
+        private async void PreflightButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (_busy) return;
+            SetBusy(true, "Running document preflight…");
+            try
+            {
+                await EnsureEngineAsync();
+                var result = await _engine.RunPreflightAsync();
+                var blocking = ExtractJsonInt(result, "blocking_issue_count") ?? 0;
+                var warnings = ExtractJsonInt(result, "warning_count") ?? 0;
+                var ready = ExtractJsonBoolean(result, "ready_for_output") == true;
+
+                AppendActivity(
+                    "Preflight",
+                    BuildPreflightSummary(ready, blocking, warnings) + Environment.NewLine + Compact(result, 5000));
+                SetStatus(ready, ready
+                    ? "Preflight ready"
+                    : "Preflight found blocking issues");
+            }
+            catch (Exception ex) { ShowError(ex); }
+            finally { SetBusy(false, null); }
+        }
+
         private async void SaveKeyButton_Click(object sender, RoutedEventArgs e)
         {
             if (_busy) return;
@@ -259,12 +282,45 @@ namespace SolYan.CorelAI.Docker
             return json.Substring(start, end - start);
         }
 
+        private static int? ExtractJsonInt(string json, string property)
+        {
+            if (string.IsNullOrWhiteSpace(json)) return null;
+            var marker = "\"" + property + "\":";
+            var start = json.IndexOf(marker, StringComparison.Ordinal);
+            if (start < 0) return null;
+            start += marker.Length;
+            var end = start;
+            while (end < json.Length && char.IsDigit(json[end])) end++;
+            int value;
+            return end > start && int.TryParse(json.Substring(start, end - start), out value) ? value : (int?)null;
+        }
+
+        private static bool? ExtractJsonBoolean(string json, string property)
+        {
+            if (string.IsNullOrWhiteSpace(json)) return null;
+            var marker = "\"" + property + "\":";
+            var start = json.IndexOf(marker, StringComparison.Ordinal);
+            if (start < 0) return null;
+            start += marker.Length;
+            if (json.IndexOf("true", start, StringComparison.Ordinal) == start) return true;
+            if (json.IndexOf("false", start, StringComparison.Ordinal) == start) return false;
+            return null;
+        }
+
+        private static string BuildPreflightSummary(bool ready, int blocking, int warnings)
+        {
+            if (ready)
+                return "Ready for output: no blocking issues. Warnings: " + warnings + ".";
+            return "Not ready for output. Blocking issues: " + blocking + ". Warnings: " + warnings + ".";
+        }
+
         private void SetBusy(bool busy, string message)
         {
             _busy = busy;
             SendButton.IsEnabled = !busy;
             UndoButton.IsEnabled = !busy;
             RefreshButton.IsEnabled = !busy;
+            PreflightButton.IsEnabled = !busy;
             SaveKeyButton.IsEnabled = !busy;
             ClearKeyButton.IsEnabled = !busy;
             ApplyModelButton.IsEnabled = !busy;
