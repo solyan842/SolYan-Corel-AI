@@ -206,8 +206,14 @@ Rules:
 
     private static bool IsVisualMutation(string toolName)
     {
-        if (toolName.StartsWith("corel_get_", StringComparison.Ordinal)) return false;
+        if (toolName.StartsWith("corel_get_", StringComparison.Ordinal) ||
+            toolName.StartsWith("corel_list_", StringComparison.Ordinal) ||
+            toolName.StartsWith("corel_preflight_", StringComparison.Ordinal))
+            return false;
+
         return toolName is not "corel_select_all"
+            and not "corel_select_shapes_by_ids"
+            and not "corel_select_matching_shapes"
             and not "corel_activate_page"
             and not "corel_activate_layer"
             and not "corel_save"
