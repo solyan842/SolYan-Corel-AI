@@ -95,6 +95,7 @@ public sealed class CorelAiRuntime
         var checks = new JsonArray();
         var passed = 0;
         var failed = 0;
+        var skipped = 0;
 
         async Task AddCheckAsync(string name, Func<Task<JsonNode?>> probe)
         {
@@ -169,6 +170,7 @@ public sealed class CorelAiRuntime
         }
         else
         {
+            skipped++;
             checks.Add(new JsonObject
             {
                 ["name"] = "document_dependent_checks",
@@ -177,12 +179,20 @@ public sealed class CorelAiRuntime
             });
         }
 
+        var status = failed > 0
+            ? "degraded"
+            : skipped > 0
+                ? "limited"
+                : "pass";
+
         return new JsonObject
         {
-            ["status"] = failed == 0 ? "pass" : "degraded",
+            ["status"] = status,
             ["non_destructive"] = true,
             ["passed"] = passed,
             ["failed"] = failed,
+            ["skipped"] = skipped,
+            ["complete"] = failed == 0 && skipped == 0,
             ["ai_configured"] = AiConfigured,
             ["model"] = _model,
             ["runtime"] = new JsonObject
