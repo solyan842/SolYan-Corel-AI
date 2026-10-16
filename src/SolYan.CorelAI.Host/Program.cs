@@ -30,7 +30,8 @@ catch (Exception ex)
     Console.Error.WriteLine($"Capability probe warning: {ex.Message}");
 }
 
-var registry = new ToolRegistry(CorelToolCatalog.Create(corel));
+var tools = CorelToolCatalog.Create(corel).Concat(CorelAdvancedToolCatalog.Create(corel));
+var registry = new ToolRegistry(tools);
 var runtime = new CorelAiRuntime(corel, http, registry, model, apiKey);
 
 if (args.Any(arg => arg.Equals("--pipe", StringComparison.OrdinalIgnoreCase)))
