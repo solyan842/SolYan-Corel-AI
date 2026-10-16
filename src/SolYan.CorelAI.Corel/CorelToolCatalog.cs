@@ -92,11 +92,12 @@ public static class CorelToolCatalog
     private static JsonObject PositiveInteger() => new() { ["type"] = "integer", ["minimum"] = 1 };
     private static JsonObject Bool() => new() { ["type"] = "boolean" };
     private static JsonObject String() => new() { ["type"] = "string" };
-    private static JsonObject Enum(params string[] values) => new()
+    private static JsonObject Enum(params string[] values)
     {
-        ["type"] = "string",
-        ["enum"] = new JsonArray(values.Select(JsonValue.Create).ToArray())
-    };
+        var items = new JsonArray();
+        foreach (var value in values) items.Add(value);
+        return new JsonObject { ["type"] = "string", ["enum"] = items };
+    }
 
     private static JsonObject Obj(params (string Name, JsonObject Schema)[] fields)
     {
