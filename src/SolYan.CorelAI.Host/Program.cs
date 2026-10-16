@@ -6,7 +6,10 @@ var environmentApiKey = Environment.GetEnvironmentVariable("OPENAI_API_KEY");
 var apiKey = !string.IsNullOrWhiteSpace(environmentApiKey)
     ? environmentApiKey
     : WindowsSecretStore.TryLoadApiKey();
-var model = Environment.GetEnvironmentVariable("OPENAI_MODEL") ?? "gpt-6-astra";
+var environmentModel = Environment.GetEnvironmentVariable("OPENAI_MODEL");
+var model = !string.IsNullOrWhiteSpace(environmentModel)
+    ? environmentModel
+    : WindowsSettingsStore.LoadModel();
 using var http = new HttpClient { Timeout = TimeSpan.FromMinutes(5) };
 using var corel = new CorelSession();
 
