@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\SolYan.CorelAI.Core\SolYan.CorelAI.Core.csproj" />
+    <ProjectReference Include="..\SolYan.CorelAI.Corel\SolYan.CorelAI.Corel.csproj" />
+    <ProjectReference Include="..\SolYan.CorelAI.Agent\SolYan.CorelAI.Agent.csproj" />
+  </ItemGroup>
+</Project>
