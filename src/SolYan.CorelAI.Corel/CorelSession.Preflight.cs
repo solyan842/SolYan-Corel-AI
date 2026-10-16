@@ -7,6 +7,7 @@ public sealed partial class CorelSession
     private const int CdrBitmapShape = 5;
     private const int CdrTextShape = 6;
     private const int CdrColorRgb = 5;
+    private const int MaxDetailedPreflightIssues = 500;
 
     public Task<JsonObject> RunPreflightAsync(
         int minBitmapDpi = 150,
@@ -26,6 +27,9 @@ public sealed partial class CorelSession
                     ["ready_for_output"] = false,
                     ["blocking_issue_count"] = 1,
                     ["warning_count"] = 0,
+                    ["issues_total"] = 1,
+                    ["issues_returned"] = 1,
+                    ["issues_truncated"] = false,
                     ["issues"] = new JsonArray
                     {
                         Issue("no_document", "error", "No CorelDRAW document is open.")
@@ -204,6 +208,7 @@ public sealed partial class CorelSession
                 node is JsonObject item && string.Equals(item["severity"]?.GetValue<string>(), "error", StringComparison.Ordinal));
             var warnings = issues.Count(node =>
                 node is JsonObject item && string.Equals(item["severity"]?.GetValue<string>(), "warning", StringComparison.Ordinal));
+            var detailedIssues = LimitIssues(issues, MaxDetailedPreflightIssues);
 
             return new JsonObject
             {
@@ -213,11 +218,15 @@ public sealed partial class CorelSession
                 ["ready_for_output"] = blocking == 0,
                 ["blocking_issue_count"] = blocking,
                 ["warning_count"] = warnings,
+                ["issues_total"] = issues.Count,
+                ["issues_returned"] = detailedIssues.Count,
+                ["issues_truncated"] = issues.Count > detailedIssues.Count,
                 ["settings"] = new JsonObject
                 {
                     ["min_bitmap_dpi"] = minBitmapDpi,
                     ["flag_rgb"] = flagRgb,
-                    ["check_fonts"] = checkFonts
+                    ["check_fonts"] = checkFonts,
+                    ["max_detailed_issues"] = MaxDetailedPreflightIssues
                 },
                 ["summary"] = new JsonObject
                 {
@@ -236,7 +245,7 @@ public sealed partial class CorelSession
                 ["missing_fonts"] = StringsToJson(missingFonts.OrderBy(name => name, StringComparer.OrdinalIgnoreCase)),
                 ["fill_color_types"] = DictionaryToJson(fillColorTypes),
                 ["outline_color_types"] = DictionaryToJson(outlineColorTypes),
-                ["issues"] = issues
+                ["issues"] = detailedIssues
             };
         }, cancellationToken);
 
@@ -277,6 +286,19 @@ public sealed partial class CorelSession
         if (page is not null) result["page"] = page.Value;
         if (staticId is not null) result["static_id"] = staticId.Value;
         if (!string.IsNullOrWhiteSpace(layer)) result["layer"] = layer;
+        return result;
+    }
+
+    private static JsonArray LimitIssues(JsonArray source, int limit)
+    {
+        if (source.Count <= limit) return source;
+
+        var result = new JsonArray();
+        for (var i = 0; i < limit; i++)
+        {
+            var node = source[i];
+            if (node is not null) result.Add(node.DeepClone());
+        }
         return result;
     }
 
