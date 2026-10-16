@@ -18,7 +18,8 @@ SolYan Corel AI is a high-capability AI operator for CorelDRAW on Windows. It us
 - All Corel COM calls run through a dedicated STA dispatcher.
 - AI geometry is normalized to millimetres without changing the user's Corel document units.
 - Each AI mutation task is wrapped in a Corel command/undo group when available.
-- Local Docker-to-engine IPC uses a current-user-only named pipe.
+- Local Docker-to-engine IPC uses a named pipe ACL restricted to the current Windows user SID; it does not rely on elevation-level matching.
+- The pipe server keeps a listener available for successive short-lived Docker connections.
 - OpenAI API key is stored using Windows user-scoped secure storage.
 - Default model is `gpt-6.1-sol`; supported model selection remains configurable.
 - The agent can receive an active-page PNG preview and perform up to two post-edit visual verification passes.
@@ -102,6 +103,7 @@ SolYan Corel AI is a high-capability AI operator for CorelDRAW on Windows. It us
 - reports Corel capability probe, document context, selection context, active-page preview export and preflight health
 - reports local runtime OS/framework/process architecture and AI configuration without exposing the API key
 - document-dependent checks are explicitly skipped when no document is open rather than reported as false failures
+- diagnostics now report `passed`, `failed`, `skipped`, `complete`, and distinguish `limited` from a full `pass`
 
 ### Explicit mutation/undo smoke test
 - not exposed to the AI tool catalog and therefore cannot be model-invoked
@@ -113,11 +115,12 @@ SolYan Corel AI is a high-capability AI operator for CorelDRAW on Windows. It us
 
 ## Verification state
 
-- GitHub Actions run #122 on `dev/v0.1-corel-agent` completed successfully for commit `d3f16ad7c5197bf3680f768686ad8f1be3e76915`.
-- Run #122 passed restore, build, self-contained engine publish, Corel add-on assembly, and artifact upload.
-- Artifact `SolYanCorelAI-win-x64` from run #122: artifact ID `12027155224`, size `30641588` bytes, SHA-256 digest `a8f48b66ef54e5a460a6a4f169822f4992f7c7615189a3d1083937c18749a66c`.
-- The current codebase through layout workflows, safe multi-page batch export, updated read-only export classification, README and field-test documentation is CI/build-verified by run #122.
-- Real CorelDRAW COM behavior is **not yet field-passed** because GitHub-hosted runners do not contain a supported CorelDRAW runtime.
+- GitHub Actions run #134 on `dev/v0.1-corel-agent` completed successfully for commit `33f71e0fd22435a685359c60077acd9dc1f54ced`.
+- Run #134 passed restore, build, self-contained engine publish, Corel add-on assembly, and artifact upload.
+- Artifact `SolYanCorelAI-win-x64` from run #134: artifact ID `12031397693`, size `30651042` bytes, SHA-256 digest `12a5b953ea117a2c5822897a550e858e284b9d91600494661bc6f30050cfc305`.
+- CorelDRAW 27.0.0.121 on Windows 11 x64 has now **partial field-passed** the packaged add-on: Docker loads inside CorelDRAW, the packaged engine auto-starts, current-user SID-restricted IPC connects, the capability probe succeeds, and no-document context diagnostics run without failure.
+- The observed no-document diagnostics passed `corel_capabilities` and `document_context`; document-dependent selection/preview/preflight checks were correctly skipped because no document was open.
+- Full Corel runtime PASS is still pending document-dependent checks, mutation/undo verification, API-key/model configuration, representative deterministic edits, export and a multi-step AI task.
 
 ## Known repository condition
 
@@ -129,7 +132,7 @@ SolYan Corel AI is a high-capability AI operator for CorelDRAW on Windows. It us
 
 ## Current blocker / next action
 
-The build-level implementation gate is green. The next meaningful verification requires a real Windows/CorelDRAW installation. Install the latest successful `SolYanCorelAI-win-x64` artifact on the user's machine and execute `docs/FIELD-TEST.md`. Do not widen the COM implementation by guesswork before collecting that runtime evidence.
+The add-on/engine/IPC gate is field-passed on CorelDRAW 27. The next runtime step requires an open Corel document: create or open a disposable document, run Diagnostics again so selection/preview/preflight execute, then run the explicit Mutation Test after acknowledging its warning. After those pass, continue through API key/model configuration and the deterministic edit/export/AI-task gates in `docs/FIELD-TEST.md`.
 
 ## Runtime PASS definition
 
