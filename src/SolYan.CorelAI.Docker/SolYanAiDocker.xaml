@@ -85,12 +85,20 @@
               Click="SendButton_Click" IsDefault="False" />
     </Grid>
 
-    <DockPanel Grid.Row="5" Margin="12,0,12,12" LastChildFill="False">
-      <Button x:Name="RefreshButton" Content="Refresh" MinWidth="70" Margin="0,0,6,0" Click="RefreshButton_Click" />
-      <Button x:Name="PreflightButton" Content="Preflight" MinWidth="74" Margin="0,0,6,0" Click="PreflightButton_Click"
-              ToolTip="Check fonts, text overflow, bitmap resolution, RGB usage, locked objects and hidden/non-editable layers." />
-      <Button x:Name="UndoButton" Content="Undo AI" MinWidth="74" Margin="0,0,8,0" Click="UndoButton_Click" />
-      <TextBlock Text="Ctrl+Enter to run" Foreground="#7F8998" FontSize="10" VerticalAlignment="Center" />
-    </DockPanel>
+    <Grid Grid.Row="5" Margin="12,0,12,12">
+      <Grid.RowDefinitions>
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="Auto" />
+      </Grid.RowDefinitions>
+      <UniformGrid Grid.Row="0" Columns="4">
+        <Button x:Name="RefreshButton" Content="Refresh" Margin="0,0,4,0" Click="RefreshButton_Click" />
+        <Button x:Name="PreflightButton" Content="Preflight" Margin="0,0,4,0" Click="PreflightButton_Click"
+                ToolTip="Check fonts, text overflow, bitmap resolution, RGB usage, locked objects and hidden/non-editable layers." />
+        <Button x:Name="DiagnosticsButton" Content="Diagnostics" Margin="0,0,4,0" Click="DiagnosticsButton_Click"
+                ToolTip="Run non-destructive Corel runtime, preview, preflight and engine health checks." />
+        <Button x:Name="UndoButton" Content="Undo AI" Click="UndoButton_Click" />
+      </UniformGrid>
+      <TextBlock Grid.Row="1" Text="Ctrl+Enter to run" Foreground="#7F8998" FontSize="10" Margin="0,6,0,0" />
+    </Grid>
   </Grid>
 </UserControl>
