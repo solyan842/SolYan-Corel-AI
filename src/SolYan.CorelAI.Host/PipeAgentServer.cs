@@ -68,6 +68,20 @@ public sealed class PipeAgentServer
             return Ok("Undone in CorelDRAW.");
         }
 
+        if (command.Equals("CLEAR_API_KEY", StringComparison.Ordinal))
+        {
+            _runtime.ClearApiKey();
+            return Ok("Stored OpenAI API key cleared for this Windows user.");
+        }
+
+        const string apiKeyPrefix = "SET_API_KEY ";
+        if (command.StartsWith(apiKeyPrefix, StringComparison.Ordinal))
+        {
+            var apiKey = Decode(command[apiKeyPrefix.Length..]);
+            _runtime.ConfigureApiKey(apiKey, persist: true);
+            return Ok("OpenAI API key encrypted and saved for this Windows user.");
+        }
+
         const string taskPrefix = "TASK ";
         if (command.StartsWith(taskPrefix, StringComparison.Ordinal))
         {
