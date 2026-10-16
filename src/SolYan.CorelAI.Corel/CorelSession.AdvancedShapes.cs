@@ -7,7 +7,7 @@ public sealed partial class CorelSession
     public Task UngroupSelectionAsync(CancellationToken cancellationToken = default) =>
         MutateAsync(() =>
         {
-            dynamic range = App().ActiveDocument.ActiveSelectionRange;
+            dynamic range = App().ActiveSelectionRange;
             EnsureSelection(range);
             range.Ungroup();
         }, cancellationToken);
@@ -15,7 +15,7 @@ public sealed partial class CorelSession
     public Task ConvertSelectionToCurvesAsync(CancellationToken cancellationToken = default) =>
         MutateAsync(() =>
         {
-            dynamic range = App().ActiveDocument.ActiveSelectionRange;
+            dynamic range = App().ActiveSelectionRange;
             EnsureSelection(range);
             range.ConvertToCurves();
         }, cancellationToken);
@@ -23,7 +23,7 @@ public sealed partial class CorelSession
     public Task CombineSelectionAsync(CancellationToken cancellationToken = default) =>
         MutateAsync(() =>
         {
-            dynamic range = App().ActiveDocument.ActiveSelectionRange;
+            dynamic range = App().ActiveSelectionRange;
             EnsureSelection(range);
             if (Convert.ToInt32(range.Count) < 2)
                 throw new InvalidOperationException("At least two selected shapes are required to combine.");
@@ -33,7 +33,7 @@ public sealed partial class CorelSession
     public Task FlipSelectionAsync(string axis, CancellationToken cancellationToken = default) =>
         MutateAsync(() =>
         {
-            dynamic range = App().ActiveDocument.ActiveSelectionRange;
+            dynamic range = App().ActiveSelectionRange;
             EnsureSelection(range);
             var axes = axis.Trim().ToLowerInvariant() switch
             {
@@ -59,7 +59,7 @@ public sealed partial class CorelSession
 
             dynamic app = App();
             dynamic doc = app.ActiveDocument;
-            dynamic source = doc.ActiveSelectionRange;
+            dynamic source = app.ActiveSelectionRange;
             EnsureSelection(source);
             var dx = ToDocumentUnits(app, doc, offsetXmm);
             var dy = ToDocumentUnits(app, doc, offsetYmm);
@@ -80,8 +80,9 @@ public sealed partial class CorelSession
         MutateAsync(() =>
         {
             var name = RequireName(layerName, nameof(layerName));
-            dynamic doc = App().ActiveDocument;
-            dynamic range = doc.ActiveSelectionRange;
+            dynamic app = App();
+            dynamic doc = app.ActiveDocument;
+            dynamic range = app.ActiveSelectionRange;
             EnsureSelection(range);
             dynamic layer = doc.ActivePage.Layers.Find(name);
             if (layer is null) throw new InvalidOperationException($"Layer '{name}' was not found on the active page.");
