@@ -9,4 +9,7 @@
     <ProjectReference Include="..\SolYan.CorelAI.Corel\SolYan.CorelAI.Corel.csproj" />
     <ProjectReference Include="..\SolYan.CorelAI.Agent\SolYan.CorelAI.Agent.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="System.IO.Pipes.AccessControl" Version="8.0.0" />
+  </ItemGroup>
 </Project>
