@@ -32,15 +32,11 @@ namespace SolYan.CorelAI.Docker
             GC.KeepAlive(_corelApplication);
         }
 
-        private async void SendButton_Click(object sender, RoutedEventArgs e)
-        {
-            await RunPromptAsync();
-        }
+        private async void SendButton_Click(object sender, RoutedEventArgs e) => await RunPromptAsync();
 
         private async void UndoButton_Click(object sender, RoutedEventArgs e)
         {
             if (_busy) return;
-
             SetBusy(true, "Undoing…");
             try
             {
@@ -49,14 +45,8 @@ namespace SolYan.CorelAI.Docker
                 SetStatus(true, "Ready");
                 await RefreshContextAsync();
             }
-            catch (Exception ex)
-            {
-                ShowError(ex);
-            }
-            finally
-            {
-                SetBusy(false, null);
-            }
+            catch (Exception ex) { ShowError(ex); }
+            finally { SetBusy(false, null); }
         }
 
         private async void RefreshButton_Click(object sender, RoutedEventArgs e)
@@ -68,7 +58,6 @@ namespace SolYan.CorelAI.Docker
         private async void SaveKeyButton_Click(object sender, RoutedEventArgs e)
         {
             if (_busy) return;
-
             var key = (ApiKeyBox.Password ?? string.Empty).Trim();
             if (key.Length < 20)
             {
@@ -86,20 +75,13 @@ namespace SolYan.CorelAI.Docker
                 SetStatus(true, "AI configured");
                 await RefreshContextAsync();
             }
-            catch (Exception ex)
-            {
-                ShowError(ex);
-            }
-            finally
-            {
-                SetBusy(false, null);
-            }
+            catch (Exception ex) { ShowError(ex); }
+            finally { SetBusy(false, null); }
         }
 
         private async void ClearKeyButton_Click(object sender, RoutedEventArgs e)
         {
             if (_busy) return;
-
             SetBusy(true, "Clearing API key…");
             try
             {
@@ -110,14 +92,32 @@ namespace SolYan.CorelAI.Docker
                 SetStatus(true, "API key cleared");
                 await RefreshContextAsync();
             }
-            catch (Exception ex)
+            catch (Exception ex) { ShowError(ex); }
+            finally { SetBusy(false, null); }
+        }
+
+        private async void ApplyModelButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (_busy) return;
+            var item = ModelBox.SelectedItem as ComboBoxItem;
+            var model = item == null ? null : item.Tag as string;
+            if (string.IsNullOrWhiteSpace(model))
             {
-                ShowError(ex);
+                AppendActivity("Error", "Choose an AI model first.");
+                return;
             }
-            finally
+
+            SetBusy(true, "Switching AI model…");
+            try
             {
-                SetBusy(false, null);
+                await EnsureEngineAsync();
+                var result = await _engine.SetModelAsync(model);
+                AppendActivity("System", result);
+                SetStatus(true, model);
+                await RefreshContextAsync();
             }
+            catch (Exception ex) { ShowError(ex); }
+            finally { SetBusy(false, null); }
         }
 
         private async void PromptBox_PreviewKeyDown(object sender, KeyEventArgs e)
@@ -132,13 +132,11 @@ namespace SolYan.CorelAI.Docker
         private async Task RunPromptAsync()
         {
             if (_busy) return;
-
             var prompt = (PromptBox.Text ?? string.Empty).Trim();
             if (prompt.Length == 0) return;
 
             SetBusy(true, "Working in CorelDRAW…");
             AppendActivity("You", prompt);
-
             try
             {
                 await EnsureEngineAsync();
@@ -148,20 +146,13 @@ namespace SolYan.CorelAI.Docker
                 SetStatus(true, "Ready");
                 await RefreshContextAsync();
             }
-            catch (Exception ex)
-            {
-                ShowError(ex);
-            }
-            finally
-            {
-                SetBusy(false, null);
-            }
+            catch (Exception ex) { ShowError(ex); }
+            finally { SetBusy(false, null); }
         }
 
         private async Task EnsureEngineAndRefreshAsync()
         {
             if (_busy) return;
-
             SetBusy(true, "Connecting to engine…");
             try
             {
@@ -169,14 +160,8 @@ namespace SolYan.CorelAI.Docker
                 SetStatus(true, "Engine connected");
                 await RefreshContextAsync();
             }
-            catch (Exception ex)
-            {
-                ShowError(ex);
-            }
-            finally
-            {
-                SetBusy(false, null);
-            }
+            catch (Exception ex) { ShowError(ex); }
+            finally { SetBusy(false, null); }
         }
 
         private async Task EnsureEngineAsync()
@@ -205,7 +190,6 @@ namespace SolYan.CorelAI.Docker
                 CreateNoWindow = true,
                 WindowStyle = ProcessWindowStyle.Hidden
             };
-
             Process.Start(startInfo);
 
             Exception lastError = null;
@@ -217,10 +201,7 @@ namespace SolYan.CorelAI.Docker
                     await _engine.PingAsync();
                     return;
                 }
-                catch (Exception ex)
-                {
-                    lastError = ex;
-                }
+                catch (Exception ex) { lastError = ex; }
             }
 
             throw new InvalidOperationException(
@@ -239,12 +220,8 @@ namespace SolYan.CorelAI.Docker
                 Path.Combine(addOnDirectory, "Engine", "SolYan.CorelAI.Host.exe"),
                 Path.Combine(addOnDirectory, "SolYan.CorelAI.Host.exe")
             };
-
             foreach (var candidate in candidates)
-            {
                 if (File.Exists(candidate)) return candidate;
-            }
-
             return null;
         }
 
@@ -252,6 +229,34 @@ namespace SolYan.CorelAI.Docker
         {
             var context = await _engine.GetContextAsync();
             ContextText.Text = Compact(context, 700);
+            SelectModelFromContext(context);
+        }
+
+        private void SelectModelFromContext(string context)
+        {
+            var model = ExtractJsonString(context, "model");
+            if (string.IsNullOrWhiteSpace(model)) return;
+            foreach (var value in ModelBox.Items)
+            {
+                var item = value as ComboBoxItem;
+                if (item != null && string.Equals(item.Tag as string, model, StringComparison.Ordinal))
+                {
+                    ModelBox.SelectedItem = item;
+                    return;
+                }
+            }
+        }
+
+        private static string ExtractJsonString(string json, string property)
+        {
+            if (string.IsNullOrWhiteSpace(json)) return null;
+            var marker = "\"" + property + "\":\"";
+            var start = json.IndexOf(marker, StringComparison.Ordinal);
+            if (start < 0) return null;
+            start += marker.Length;
+            var end = json.IndexOf('"', start);
+            if (end < 0) return null;
+            return json.Substring(start, end - start);
         }
 
         private void SetBusy(bool busy, string message)
@@ -262,6 +267,8 @@ namespace SolYan.CorelAI.Docker
             RefreshButton.IsEnabled = !busy;
             SaveKeyButton.IsEnabled = !busy;
             ClearKeyButton.IsEnabled = !busy;
+            ApplyModelButton.IsEnabled = !busy;
+            ModelBox.IsEnabled = !busy;
             PromptBox.IsEnabled = !busy;
             ApiKeyBox.IsEnabled = !busy;
 
@@ -296,9 +303,7 @@ namespace SolYan.CorelAI.Docker
         {
             if (string.IsNullOrWhiteSpace(value)) return "No active document context.";
             var singleLine = value.Replace("\r", " ").Replace("\n", " ").Trim();
-            return singleLine.Length <= maxLength
-                ? singleLine
-                : singleLine.Substring(0, maxLength) + "…";
+            return singleLine.Length <= maxLength ? singleLine : singleLine.Substring(0, maxLength) + "…";
         }
     }
 }
